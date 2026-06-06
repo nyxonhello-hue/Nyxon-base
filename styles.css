@@ -582,7 +582,89 @@ body {
 }
 
 /* ===========================
-   RESPONSIVE — mobile & tablet
+   MOBILE TOOLBAR FIX
+   - Hide desktop-only header items on small screens
+   - Show only hamburger + preview toggle
+   - Move mode tabs below header as a scroll strip
+=========================== */
+
+/* Desktop-only items: visible by default, hidden on mobile */
+.desktop-only { display: flex; }
+
+@media (max-width: 900px) {
+  /* 1. Allow header to wrap so mode tabs drop to their own row */
+  #app-header {
+    height: auto;
+    min-height: 52px;
+    padding: 8px 14px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* 2. Hide all desktop-only action items */
+  .desktop-only { display: none !important; }
+
+  /* 3. Mode tabs: pull out of header flow, render as a horizontal scroll strip */
+  .mode-tabs {
+    order: 99;
+    width: 100%;
+    border-radius: 0;
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+    padding: 0 12px;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .mode-tabs::-webkit-scrollbar { display: none; }
+  .mode-tab {
+    padding: 10px 14px;
+    border-radius: 0;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-bottom: 2px solid transparent;
+  }
+  .mode-tab.active {
+    background: transparent;
+    box-shadow: none;
+    border-bottom: 2px solid var(--c-accent);
+  }
+  .mode-tab.active[data-mode="cv"]        { border-bottom-color: var(--c-accent-2); }
+  .mode-tab.active[data-mode="cover"]     { border-bottom-color: var(--c-accent-warm); }
+  .mode-tab.active[data-mode="portfolio"] { border-bottom-color: var(--c-accent-rose); }
+
+  /* 4. Header left section: don't shrink the logo */
+  #app-header > div:first-child { flex-shrink: 0; }
+
+  /* 5. Mobile button group on the right */
+  #app-header > div:last-child {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+
+  /* 6. Make hamburger and preview toggle look good */
+  .mobile-menu-btn,
+  .mobile-view-toggle {
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
+
+/* Mobile menu export item accent */
+.mobile-menu-item--export {
+  background: rgba(139,92,246,0.08) !important;
+  color: var(--c-accent) !important;
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 8px;
+}
+.mobile-menu-item--export:hover {
+  background: rgba(139,92,246,0.15) !important;
+}
+/* ===========================
    - Provide an Edit / Preview toggle on small screens
    - Default mobile view: Editor (sidebar). Toggle shows Preview fullscreen.
    - Improve touch targets and spacing on small screens.

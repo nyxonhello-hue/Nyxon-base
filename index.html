@@ -57,7 +57,7 @@
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;">
-      <div class="demo-dropdown" style="position:relative;">
+      <div class="demo-dropdown desktop-only" style="position:relative;">
         <button class="hdr-btn" id="loadDemoBtn" onclick="toggleDemoMenu(event)">Load Demo</button>
         <div class="demo-menu" id="demoMenu" style="display:none;position:absolute;left:0;top:38px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:40;padding:4px;min-width:220px;">
           <button class="export-option" data-demo="ava" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Designer — Ava Bennett</button>
@@ -65,10 +65,10 @@
           <button class="export-option" data-demo="chen" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Academic — Dr. Chen Li</button>
         </div>
       </div>
-      <button class="hdr-btn" onclick="resetAll()">Reset</button>
+      <button class="hdr-btn desktop-only" onclick="resetAll()">Reset</button>
 
       <!-- Theme Toggle (Light / Dark) -->
-      <div class="theme-toggle" role="group" aria-label="Theme">
+      <div class="theme-toggle desktop-only" role="group" aria-label="Theme">
         <button class="theme-btn" id="theme-btn-dark" type="button" aria-label="Switch to dark theme" onclick="setTheme('dark')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -89,7 +89,7 @@
         </button>
       </div>
 
-      <div class="export-dropdown" id="exportDropdown">
+      <div class="export-dropdown desktop-only" id="exportDropdown">
         <button class="hdr-btn-export" onclick="toggleExportMenu(event)">
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Export
@@ -125,18 +125,18 @@
             <button class="mobile-menu-item" onclick="(window.loadLiam ? window.loadLiam() : window.loadDemoData('liam')); closeMobileMenu()">Engineer — Liam Park</button>
             <button class="mobile-menu-item" onclick="(window.loadChen ? window.loadChen() : window.loadDemoData('chen')); closeMobileMenu()">Academic — Dr. Chen Li</button>
           </div>
-          <button class="mobile-menu-item" onclick="resetAll(); closeMobileMenu();">Reset</button>
-          <button class="mobile-menu-item" onclick="exportToPDF(); closeMobileMenu();">Export PDF</button>
-          <button class="mobile-menu-item" onclick="exportToDocx(); closeMobileMenu();">Export DOCX</button>
-          <div style="display:flex;gap:8px;padding-top:8px;">
-            <button class="mobile-menu-item" onclick="setTheme('light'); closeMobileMenu();">Light</button>
-            <button class="mobile-menu-item" onclick="setTheme('dark'); closeMobileMenu();">Dark</button>
+          <button class="mobile-menu-item" onclick="resetAll(); closeMobileMenu();" style="color:var(--c-muted);">↺ Reset</button>
+          <button class="mobile-menu-item mobile-menu-item--export" onclick="exportToPDF(); closeMobileMenu();">⬇ Export PDF</button>
+          <button class="mobile-menu-item mobile-menu-item--export" onclick="exportToDocx(); closeMobileMenu();">⬇ Export DOCX</button>
+          <div style="display:flex;gap:8px;padding-top:4px;border-top:1px solid var(--c-border);margin-top:4px;">
+            <button class="mobile-menu-item" style="flex:1;text-align:center;" onclick="setTheme('light'); closeMobileMenu();">☀ Light</button>
+            <button class="mobile-menu-item" style="flex:1;text-align:center;" onclick="setTheme('dark'); closeMobileMenu();">☾ Dark</button>
           </div>
         </div>
       </div>
 
       <!-- Demo processing log (shows queued/processed demo profiles) -->
-      <div id="demoLog" class="demo-log" aria-live="polite" aria-atomic="true"></div>
+      <div id="demoLog" class="demo-log desktop-only" aria-live="polite" aria-atomic="true"></div>
     </div>
   </header>
 
