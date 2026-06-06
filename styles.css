@@ -631,6 +631,29 @@ body {
 .mobile-view-toggle { display: none; align-items: center; justify-content: center; gap: 8px; }
 .mobile-view-toggle svg { width: 14px; height: 14px; }
 
+/* Mobile actions menu styles */
+.mobile-menu { position: absolute; top: 56px; right: 12px; width: 92%; max-width: 360px; z-index: 300; }
+.mobile-menu-inner {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  padding: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mobile-menu-item {
+  background: transparent; border: none; text-align: left;
+  padding: 10px 12px; border-radius: 8px; color: var(--c-text);
+  cursor: pointer; font-weight: 700; font-size: 14px;
+}
+.mobile-menu-item:hover { background: rgba(255,255,255,0.03); }
+.mobile-submenu { display: flex; flex-direction: column; gap: 6px; padding-left: 8px; }
+
+/* Show mobile menu & hamburger only on small screens */
+@media (max-width: 900px) {
+  .mobile-menu-btn { display: inline-flex; }
+}
+
 /* ===========================
    SECTION COLLAPSE ANIMATION
 =========================== */

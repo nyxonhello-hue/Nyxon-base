@@ -176,6 +176,64 @@ document.addEventListener('DOMContentLoaded', () => {
   updatePreview();
 });
 
+// ===== Mobile Menu (hamburger) =====
+function toggleMobileMenu() {
+  try {
+    const menu = document.getElementById('mobileMenu');
+    const btn = document.getElementById('mobileMenuBtn');
+    if (!menu) return;
+    const open = menu.style.display === '' || menu.style.display === 'block';
+    menu.style.display = open ? 'none' : 'block';
+    if (btn) btn.setAttribute('aria-expanded', (!open).toString());
+  } catch (e) { console.error('toggleMobileMenu error', e); }
+}
+
+function closeMobileMenu() {
+  try {
+    const menu = document.getElementById('mobileMenu');
+    const btn = document.getElementById('mobileMenuBtn');
+    if (menu) menu.style.display = 'none';
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    const demoSub = document.getElementById('mobileDemoSubmenu'); if (demoSub) demoSub.style.display = 'none';
+  } catch (e) {}
+}
+
+function toggleMobileDemoSubmenu() {
+  try {
+    const sub = document.getElementById('mobileDemoSubmenu');
+    if (!sub) return;
+    sub.style.display = (sub.style.display === '' || sub.style.display === 'block') ? 'none' : 'block';
+  } catch (e) { console.error('toggleMobileDemoSubmenu', e); }
+}
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('mobileMenu');
+  const btn = document.getElementById('mobileMenuBtn');
+  if (!menu || !btn) return;
+  const target = e.target;
+  if (menu.style.display === 'block') {
+    if (!menu.contains(target) && !btn.contains(target)) {
+      closeMobileMenu();
+    }
+  }
+});
+
+// Initialize mobile menu button visibility alongside other mobile controls
+document.addEventListener('DOMContentLoaded', () => {
+  const mb = document.getElementById('mobileMenuBtn');
+  const mv = document.getElementById('mobileViewToggle');
+  if (!mb) return;
+  const check = () => {
+    const show = window.innerWidth <= 900;
+    mb.style.display = show ? 'inline-flex' : 'none';
+    if (mv) mv.style.display = show ? 'inline-flex' : 'none';
+    if (!show) closeMobileMenu();
+  };
+  check();
+  window.addEventListener('resize', check);
+});
+
 // ── THEME (Light / Dark) ────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem('nyxon-theme');

@@ -112,8 +112,29 @@
           </button>
         </div>
       </div>
-      <!-- Mobile Edit/Preview toggle (visible on small screens) -->
+      <!-- Mobile hamburger menu and Edit/Preview toggle (visible on small screens) -->
+      <button id="mobileMenuBtn" class="hdr-btn mobile-menu-btn" onclick="toggleMobileMenu()" aria-expanded="false" style="display:none;">☰ Menu</button>
       <button id="mobileViewToggle" class="hdr-btn mobile-view-toggle" aria-pressed="false" onclick="toggleMobileView()" style="display:none;">Show Preview</button>
+
+      <!-- Mobile actions menu (contains demo profiles, reset, export, theme) -->
+      <div id="mobileMenu" class="mobile-menu" style="display:none;">
+        <div class="mobile-menu-inner">
+          <button class="mobile-menu-item" onclick="toggleMobileDemoSubmenu()">Load Demo ▸</button>
+          <div id="mobileDemoSubmenu" class="mobile-submenu" style="display:none;">
+            <button class="mobile-menu-item" onclick="(window.loadAva ? window.loadAva() : window.loadDemoData('ava')); closeMobileMenu()">Designer — Ava Bennett</button>
+            <button class="mobile-menu-item" onclick="(window.loadLiam ? window.loadLiam() : window.loadDemoData('liam')); closeMobileMenu()">Engineer — Liam Park</button>
+            <button class="mobile-menu-item" onclick="(window.loadChen ? window.loadChen() : window.loadDemoData('chen')); closeMobileMenu()">Academic — Dr. Chen Li</button>
+          </div>
+          <button class="mobile-menu-item" onclick="resetAll(); closeMobileMenu();">Reset</button>
+          <button class="mobile-menu-item" onclick="exportToPDF(); closeMobileMenu();">Export PDF</button>
+          <button class="mobile-menu-item" onclick="exportToDocx(); closeMobileMenu();">Export DOCX</button>
+          <div style="display:flex;gap:8px;padding-top:8px;">
+            <button class="mobile-menu-item" onclick="setTheme('light'); closeMobileMenu();">Light</button>
+            <button class="mobile-menu-item" onclick="setTheme('dark'); closeMobileMenu();">Dark</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Demo processing log (shows queued/processed demo profiles) -->
       <div id="demoLog" class="demo-log" aria-live="polite" aria-atomic="true"></div>
     </div>
