@@ -209,6 +209,9 @@ body {
   transition: all 0.15s ease;
 }
 .hdr-btn:hover { color: var(--c-text); border-color: var(--c-border-hover); }
+.hdr-btn[disabled] {
+  opacity: 0.5; pointer-events: none; filter: grayscale(0.18);
+}
 .hdr-btn-export {
   padding: 6px 16px;
   border-radius: 8px;
@@ -474,6 +477,13 @@ body {
   font-size: 10px; font-weight: 700; color: var(--c-muted);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
+/* Improve contrast for dark theme: use blue color for repeatable item headers */
+:root:not([data-theme="light"]) .rep-item-header {
+  color: #3b82f6; /* blue-500 */
+}
+:root[data-theme="light"] .rep-item-header {
+  color: var(--c-muted);
+}
 .btn-remove {
   padding: 2px 7px; border-radius: 5px;
   background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2);
@@ -488,6 +498,8 @@ body {
   font-family: var(--font-body); width: 100%; text-align: center;
   transition: all 0.15s ease;
 }
+.btn-add-item { color: #3b82f6; }
+:root[data-theme="light"] .btn-add-item { color: var(--c-muted); }
 .btn-add-item:hover { border-color: var(--c-border-hover); color: var(--c-text); background: rgba(255,255,255,0.05); }
 
 /* ===========================
@@ -634,3 +646,27 @@ body {
 .tpl-card { position: relative; }
 
 /* Scroll-triggered thumb color already handled; keep accents */
+
+/* Demo log (header) */
+.demo-log {
+  margin-left: 12px;
+  max-width: 360px;
+  max-height: 56px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--c-muted);
+}
+.demo-log-entry {
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.demo-log-entry.queued { background: rgba(255,193,7,0.06); color: #f59e0b; }
+.demo-log-entry.processed { background: rgba(34,197,94,0.06); color: #16a34a; }
+.demo-log-entry.error { background: rgba(244,63,94,0.06); color: #ef4444; }

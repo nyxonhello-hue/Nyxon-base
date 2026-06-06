@@ -57,7 +57,14 @@
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="hdr-btn" onclick="loadDemoData()">Load Demo</button>
+      <div class="demo-dropdown" style="position:relative;">
+        <button class="hdr-btn" id="loadDemoBtn" onclick="toggleDemoMenu(event)">Load Demo</button>
+        <div class="demo-menu" id="demoMenu" style="display:none;position:absolute;left:0;top:38px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:40;padding:4px;min-width:220px;">
+          <button class="export-option" data-demo="ava" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Designer — Ava Bennett</button>
+          <button class="export-option" data-demo="liam" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Engineer — Liam Park</button>
+          <button class="export-option" data-demo="chen" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Academic — Dr. Chen Li</button>
+        </div>
+      </div>
       <button class="hdr-btn" onclick="resetAll()">Reset</button>
 
       <!-- Theme Toggle (Light / Dark) -->
@@ -105,6 +112,8 @@
           </button>
         </div>
       </div>
+      <!-- Demo processing log (shows queued/processed demo profiles) -->
+      <div id="demoLog" class="demo-log" aria-live="polite" aria-atomic="true"></div>
     </div>
   </header>
 
@@ -214,9 +223,51 @@
               <input class="form-input" id="website" oninput="updatePreview()" placeholder="alexrivera.com">
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">LinkedIn</label>
+              <input class="form-input" id="linkedin" oninput="updatePreview()" placeholder="linkedin.com/in/yourname">
+            </div>
+            <div class="form-group">
+              <label class="form-label">GitHub</label>
+              <input class="form-input" id="github" oninput="updatePreview()" placeholder="github.com/username">
+            </div>
+          </div>
           <div class="form-group">
             <label class="form-label">Summary</label>
             <textarea class="form-textarea" id="summary" oninput="updatePreview()" placeholder="A brief professional summary or bio…" style="min-height:80px;"></textarea>
+          </div>
+          <div id="personalFields">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date of Birth</label>
+              <input class="form-input" id="dob" oninput="updatePreview()" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <input class="form-input" id="gender" oninput="updatePreview()" placeholder="e.g. Female / Male / Non-binary">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nationality</label>
+              <input class="form-input" id="nationality" oninput="updatePreview()" placeholder="e.g. United States">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Marital Status</label>
+              <input class="form-input" id="maritalStatus" oninput="updatePreview()" placeholder="e.g. Single / Married">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Languages</label>
+              <input class="form-input" id="languages" oninput="updatePreview()" placeholder="e.g. English (native), Spanish (fluent)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Religion</label>
+              <input class="form-input" id="religion" oninput="updatePreview()" placeholder="Optional">
+            </div>
+          </div>
           </div>
         </div>
       </div>

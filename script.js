@@ -39,6 +39,84 @@ let skills       = [];
 let projects     = [];
 let references   = [];
 
+// Provide a safe global loader API early so UI handlers can call it
+// even if the real loader is defined later in the file. Calls will be
+// queued and executed once the real loader is available.
+if (!window.loadDemoData) {
+  // hold any demo requests that occur before the real loader is defined
+  window._queuedDemoProfiles = window._queuedDemoProfiles || [];
+  window.loadDemoData = function(profile) {
+    // If a demo was already loaded, ignore further requests
+      // allow multiple demo loads; do not block if one was previously loaded
+    if (window.__realLoadDemo && typeof window.__realLoadDemo === 'function') {
+      return window.__realLoadDemo(profile);
+    }
+    // queue the request for later (support a single queued demo)
+    if (!window._queuedDemoProfiles.includes(profile)) {
+      window._queuedDemoProfiles.push(profile);
+      console.warn('loadDemoData called before loader ready, queued:', profile);
+      // show a non-blocking toast if the toast helper exists
+      if (typeof showToast === 'function') showToast(`Demo queued: ${profile}`);
+      // add a visible demo log entry if the UI helper exists
+      if (typeof demoLogAdd === 'function') demoLogAdd(profile, 'queued');
+    } else {
+      try { if (typeof showToast === 'function') showToast('Demo already queued'); } catch (e) {}
+    }
+  };
+}
+
+// Helper to append entries to the demo log UI (if present)
+function demoLogAdd(profile, status) {
+  try {
+    const el = document.getElementById('demoLog');
+    if (!el) return;
+    const div = document.createElement('div');
+    div.className = 'demo-log-entry ' + (status === 'processed' ? 'processed' : (status === 'error' ? 'error' : 'queued'));
+    const ts = new Date().toLocaleTimeString();
+    div.textContent = `${ts} — ${status === 'processed' ? 'Loaded' : (status === 'error' ? 'Error' : 'Queued')}: ${profile}`;
+    el.prepend(div);
+    // auto-expire after 6s with fade
+    setTimeout(() => {
+      try {
+        div.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        div.style.opacity = '0';
+        div.style.transform = 'translateY(-6px)';
+        setTimeout(() => { try { div.remove(); } catch(e){} }, 420);
+      } catch (e) {}
+    }, 6000);
+  } catch (e) { /* ignore logging errors */ }
+}
+
+// Loader readiness flag & helper
+window.loaderReady = false;
+function setLoaderReady(val) {
+  window.loaderReady = !!val;
+  const btn = document.getElementById('loadDemoBtn');
+  if (btn) {
+    if (window.loaderReady) btn.removeAttribute('disabled');
+    else btn.setAttribute('disabled', '');
+  }
+  try { if (window.loaderReady && typeof demoLogAdd === 'function') demoLogAdd('loader','processed'); } catch (e) {}
+}
+
+// Validate that expected form IDs/containers exist and log missing ones
+function validateFormIds(list) {
+  if (!Array.isArray(list)) return true;
+  const missing = [];
+  list.forEach(id => { if (!document.getElementById(id)) missing.push(id); });
+  if (missing.length) {
+    missing.forEach(id => {
+      console.warn('Missing form element:', id);
+      try { if (typeof demoLogAdd === 'function') demoLogAdd(id, 'error'); } catch (e) {}
+    });
+    return false;
+  }
+  return true;
+}
+
+// Reset demo state: allow demo to be loaded again for testing
+// resetDemoState removed — demo loader is reusable by default
+
 // Cover letter object holds the typed sections for a cover letter mode.
 let coverLetter  = { company:'', role:'', intro:'', body:'', closing:'' };
 
@@ -80,6 +158,8 @@ const PORT_STYLES = [
 // ── INIT ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+
+  // no-op: demo menu handled inline
 
   buildTemplateGrid();
   buildCoverStyleGrid();
@@ -218,12 +298,62 @@ function setMode(mode) {
   document.getElementById('sec-skills').style.display      = (mode==='cover') ? 'none' : '';
   document.getElementById('sec-cert').style.display        = (mode==='cover' || mode==='portfolio') ? 'none' : '';
   document.getElementById('sec-cover-fields').style.display = mode==='cover'    ? '' : 'none';
+  const pf = document.getElementById('personalFields');
+  if (pf) pf.style.display = (mode==='cover' || mode==='portfolio') ? 'none' : '';
   document.getElementById('sec-projects').style.display    = mode==='portfolio' ? '' : 'none';
   document.getElementById('targetJobGroup').style.display  = (mode==='resume')  ? '' : 'none';
 
   if (mode==='portfolio' && projects.length===0) addProject();
   updatePreview();
 }
+
+// Demo menu toggle (header)
+function toggleDemoMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('demoMenu');
+  if (!m) return;
+  m.style.display = (m.style.display === 'none' || !m.style.display) ? '' : 'none';
+}
+document.addEventListener('click', () => {
+  const m = document.getElementById('demoMenu'); if (m) m.style.display = 'none';
+});
+
+// Wire demo menu buttons (delegated) to ensure profile loading works
+(function wireDemoMenu() {
+  function attach() {
+    const demoMenu = document.getElementById('demoMenu');
+    if (!demoMenu) return;
+    // avoid double-attaching
+    if (demoMenu._demoWired) return; demoMenu._demoWired = true;
+    demoMenu.addEventListener('click', (e) => {
+      try {
+        // ensure we have an Element to call closest on (handle text node clicks)
+        let node = e.target;
+        while (node && node.nodeType !== 1) node = node.parentNode;
+        if (!node) return;
+        const btn = node.closest('[data-demo]');
+        if (!btn) return;
+        const profile = btn.getAttribute('data-demo');
+        console.log('Demo menu clicked:', profile);
+        // prefer calling a specific per-profile loader (e.g. loadAva) if present
+        const pname = String(profile || 'ava').toLowerCase();
+        const fnName = 'load' + (pname.charAt(0).toUpperCase() + pname.slice(1));
+        if (window && typeof window[fnName] === 'function') {
+          window[fnName]();
+        } else if (window && typeof window.loadDemoData === 'function') {
+          window.loadDemoData(profile);
+        } else if (typeof loadDemoData === 'function') {
+          loadDemoData(profile);
+        } else throw new Error('loadDemoData is not defined');
+      } catch (err) {
+        console.error('Error loading demo profile', err);
+        alert('Failed to load demo: ' + (err && err.message ? err.message : String(err)));
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
+  else attach();
+})();
 
 // ── ZOOM ───────────────────────────────────────────────
 function updateZoom(val) {
@@ -242,6 +372,14 @@ function getFormData() {
     phone:     v('phone'),
     location:  v('location'),
     website:   v('website'),
+    linkedin:  v('linkedin'),
+    github:    v('github'),
+    dob:       v('dob'),
+    gender:    v('gender'),
+    nationality: v('nationality'),
+    maritalStatus: v('maritalStatus'),
+    languages: v('languages'),
+    religion:  v('religion'),
     summary:   v('summary'),
     experiences:    experiences.filter(e => e.company || e.position),
     educations:     educations.filter(e => e.school || e.degree),
@@ -348,7 +486,6 @@ function renderEducationInputs() {
           <label class="form-label">Field</label>
           <input class="form-input" value="${esc(e.field)}" oninput="updateEducation(${e.id},'field',this.value)" placeholder="Computer Science">
         </div>
-        ${data.references && data.references.length ? cvSection('References', data.references.map(r=>`<div style="margin-bottom:10px;"><div style="font-size:13px;font-weight:600;color:#0f172a;">${r.name||'Reference'}</div><div style="font-size:12px;color:#6b7280;">${r.title||''}${r.title&&r.institution?', ':''}${r.institution||''}</div><div style="font-size:12px;color:#4b5563;margin-top:4px;">${r.email?`Email: ${r.email}`:''}${r.email&&r.number?` · `:''}${r.number?`Tel: ${r.number}`:''}</div></div>`).join('')) : ''}
       </div>
     </div>
   `).join('');
@@ -531,10 +668,16 @@ function updateCoverLetter(field, value) {
 }
 
 // ── AI TOAST ───────────────────────────────────────────
-function showToast() {
+// Show a small toast; optional `msg` overrides default text.
+function showToast(msg) {
   const t = document.getElementById('ai-toast');
+  if (!t) return;
+  const span = t.querySelector('span');
+  if (span) span.textContent = msg || 'Nyxon is refreshing your document…';
   t.classList.remove('hidden');
-  setTimeout(() => t.classList.add('hidden'), 2200);
+  // auto-hide after a short duration
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.add('hidden'), 2000);
 }
 
 // ── MAIN RENDER DISPATCHER ─────────────────────────────
@@ -567,7 +710,38 @@ function updatePreview() {
 // ── UTILS ──────────────────────────────────────────────
 function esc(s='') { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function contactLine(d, sep=' · ') {
-  return [d.email, d.phone, d.location, d.website].filter(Boolean).join(sep);
+  const parts = [];
+  if (d.email) parts.push(esc(d.email));
+  if (d.phone) parts.push(esc(d.phone));
+  if (d.location) parts.push(esc(d.location));
+  if (d.website) parts.push(makeLink(d.website, d.website));
+  if (d.linkedin) parts.push(makeLink(d.linkedin, d.linkedin));
+  if (d.github) parts.push(makeLink(d.github, d.github));
+  return parts.filter(Boolean).join(sep);
+}
+
+function normalizeUrl(u) {
+  if (!u) return '';
+  const trimmed = String(u).trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return 'https://' + trimmed.replace(/^\/+/, '');
+}
+
+function makeLink(url, label) {
+  const href = normalizeUrl(url);
+  return `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;">${esc(label)}</a>`;
+}
+
+function personalBlock(d, theme='modern') {
+  const items = [];
+  if (d.dob) items.push(`<div style="font-size:12px;color:${theme==='modern'?'#94a3b8':'#6b7280'};"><strong>Date of Birth:</strong> ${esc(d.dob)}</div>`);
+  if (d.gender) items.push(`<div style="font-size:12px;color:${theme==='modern'?'#94a3b8':'#6b7280'};"><strong>Gender:</strong> ${esc(d.gender)}</div>`);
+  if (d.nationality) items.push(`<div style="font-size:12px;color:${theme==='modern'?'#94a3b8':'#6b7280'};"><strong>Nationality:</strong> ${esc(d.nationality)}</div>`);
+  if (d.maritalStatus) items.push(`<div style="font-size:12px;color:${theme==='modern'?'#94a3b8':'#6b7280'};"><strong>Marital Status:</strong> ${esc(d.maritalStatus)}</div>`);
+  if (d.languages) items.push(`<div style="font-size:12px;color:${theme==='modern'?'#94a3b8':'#6b7280'};"><strong>Languages:</strong> ${esc(d.languages)}</div>`);
+  if (d.religion) items.push(`<div style="font-size:12px;color:${theme==='modern'?'#94a3b8':'#6b7280'};"><strong>Religion:</strong> ${esc(d.religion)}</div>`);
+  if (!items.length) return '';
+  return `<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">${items.join('')}</div>`;
 }
 function dateRange(exp) {
   if (!exp.startDate && !exp.endDate) return '';
@@ -591,6 +765,7 @@ function renderModern(data) {
       </div>
       <div style="height:2px;background:linear-gradient(90deg,#8b5cf6,#06b6d4);border-radius:2px;"></div>
       ${contactBlock(data, 'modern')}
+      ${personalBlock(data, 'modern')}
       ${data.skills.length ? `
       <div>
         <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#475569;margin-bottom:12px;font-weight:700;">Skills</div>
@@ -655,14 +830,16 @@ function contactBlock(data, theme='modern') {
     data.email    ? { icon:'✉', val: data.email } : null,
     data.phone    ? { icon:'✆', val: data.phone } : null,
     data.location ? { icon:'⌖', val: data.location } : null,
-    data.website  ? { icon:'⊕', val: data.website } : null,
+    data.website  ? { icon:'⊕', val: data.website, href: normalizeUrl(data.website) } : null,
+    data.linkedin ? { icon:'in', val: data.linkedin, href: normalizeUrl(data.linkedin) } : null,
+    data.github   ? { icon:'gh', val: data.github, href: normalizeUrl(data.github) } : null,
   ].filter(Boolean);
   if (!items.length) return '';
   const textColor = theme==='modern' ? '#94a3b8' : '#64748b';
   return `<div style="display:flex;flex-direction:column;gap:7px;">
     <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#475569;margin-bottom:4px;font-weight:700;">Contact</div>
     ${items.map(i => `<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:${textColor};">
-      <span style="font-size:12px;opacity:0.7;">${i.icon}</span>${i.val}
+      <span style="font-size:12px;opacity:0.7;">${i.icon}</span>${i.href?makeLink(i.href, i.val):esc(i.val)}
     </div>`).join('')}
   </div>`;
 }
@@ -678,6 +855,7 @@ function renderClassic(data) {
       <div style="margin-top:10px;font-size:12px;color:#64748b;display:flex;justify-content:center;gap:16px;flex-wrap:wrap;">
         ${[data.email,data.phone,data.location,data.website].filter(Boolean).map(v=>`<span>${v}</span>`).join('<span style="color:#d1d5db;">|</span>')}
       </div>
+      ${personalBlock(data,'classic')}
     </div>
     ${data.summary ? classicSection('Professional Summary', `<p style="font-size:13.5px;line-height:1.8;color:#374151;text-align:justify;">${data.summary}</p>`) : ''}
     ${data.experiences.length ? classicSection('Professional Experience', data.experiences.map(e => `
@@ -718,6 +896,7 @@ function renderMinimal(data) {
       <div style="font-size:34px;font-weight:300;letter-spacing:-0.04em;color:#111827;">${name}</div>
       ${data.title ? `<div style="font-size:13px;color:#9ca3af;margin-top:6px;font-weight:400;">${data.title}</div>` : ''}
       <div style="margin-top:12px;font-size:11px;color:#9ca3af;">${contactLine(data)}</div>
+      ${personalBlock(data,'minimal')}
       ${data.targetJob ? `<div style="margin-top:4px;font-size:10px;color:#c4b5fd;">↳ ${data.targetJob}</div>` : ''}
     </div>
     ${data.summary ? `<div style="margin-bottom:40px;max-width:480px;"><div style="font-size:12px;color:#6b7280;line-height:1.9;">${data.summary}</div></div>` : ''}
@@ -2252,255 +2431,6 @@ function updateExperience(id, field, value) {
   const e = experiences.find(e => e.id === id);
   if (e) { e[field] = value; updatePreview(); }
 }
-function renderExperienceInputs() {
-  document.getElementById('expList').innerHTML = experiences.map((e,i) => `
-    <div class="rep-item">
-      <div class="rep-item-header">
-        <span>Position ${i+1}</span>
-        <button class="btn-remove" onclick="removeExperience(${e.id})">Remove</button>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Company</label>
-          <input class="form-input" value="${esc(e.company)}" oninput="updateExperience(${e.id},'company',this.value)" placeholder="Acme Inc.">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Position</label>
-          <input class="form-input" value="${esc(e.position)}" oninput="updateExperience(${e.id},'position',this.value)" placeholder="Senior Designer">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Start</label>
-          <input class="form-input" value="${esc(e.startDate)}" oninput="updateExperience(${e.id},'startDate',this.value)" placeholder="Jan 2022">
-        </div>
-        <div class="form-group">
-          <label class="form-label">End</label>
-          <input class="form-input" value="${esc(e.endDate)}" oninput="updateExperience(${e.id},'endDate',this.value)" placeholder="Present">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Description</label>
-        <textarea class="form-textarea" oninput="updateExperience(${e.id},'description',this.value)" placeholder="Key responsibilities and achievements…">${esc(e.description)}</textarea>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── EDUCATION ──────────────────────────────────────────
-function addEducation() {
-  educations.push({ id: Date.now(), school:'', degree:'', field:'', year:'' });
-  renderEducationInputs();
-}
-function removeEducation(id) {
-  educations = educations.filter(e => e.id !== id);
-  renderEducationInputs(); updatePreview();
-}
-function updateEducation(id, field, value) {
-  const e = educations.find(e => e.id === id);
-  if (e) { e[field] = value; updatePreview(); }
-}
-function renderEducationInputs() {
-  document.getElementById('eduList').innerHTML = educations.map((e,i) => `
-    <div class="rep-item">
-      <div class="rep-item-header">
-        <span>Degree ${i+1}</span>
-        <button class="btn-remove" onclick="removeEducation(${e.id})">Remove</button>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">School</label>
-          <input class="form-input" value="${esc(e.school)}" oninput="updateEducation(${e.id},'school',this.value)" placeholder="MIT">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Year</label>
-          <input class="form-input" value="${esc(e.year)}" oninput="updateEducation(${e.id},'year',this.value)" placeholder="2020">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Degree</label>
-          <input class="form-input" value="${esc(e.degree)}" oninput="updateEducation(${e.id},'degree',this.value)" placeholder="B.S.">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Field</label>
-          <input class="form-input" value="${esc(e.field)}" oninput="updateEducation(${e.id},'field',this.value)" placeholder="Computer Science">
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── CERTIFICATIONS ─────────────────────────────────────
-function addCertification() {
-  certifications.push({ id: Date.now(), name:'', issuer:'', year:'' });
-  renderCertificationInputs();
-}
-function removeCertification(id) {
-  certifications = certifications.filter(c => c.id !== id);
-  renderCertificationInputs(); updatePreview();
-}
-function updateCertification(id, field, value) {
-  const c = certifications.find(c => c.id === id);
-  if (c) { c[field] = value; updatePreview(); }
-}
-function renderCertificationInputs() {
-  document.getElementById('certList').innerHTML = certifications.map((c,i) => `
-    <div class="rep-item">
-      <div class="rep-item-header">
-        <span>Cert ${i+1}</span>
-        <button class="btn-remove" onclick="removeCertification(${c.id})">Remove</button>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Certificate Name</label>
-        <input class="form-input" value="${esc(c.name)}" oninput="updateCertification(${c.id},'name',this.value)" placeholder="AWS Solutions Architect">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Issuer</label>
-          <input class="form-input" value="${esc(c.issuer)}" oninput="updateCertification(${c.id},'issuer',this.value)" placeholder="Amazon">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Year</label>
-          <input class="form-input" value="${esc(c.year)}" oninput="updateCertification(${c.id},'year',this.value)" placeholder="2023">
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── REFERENCES (CV) ───────────────────────────────────
-function addReference() {
-  references.push({ id: Date.now(), name:'', title:'', institution:'', email:'', number:'' });
-  renderReferenceInputs();
-}
-function removeReference(id) {
-  references = references.filter(r => r.id !== id);
-  renderReferenceInputs(); updatePreview();
-}
-function updateReference(id, field, value) {
-  const r = references.find(x => x.id === id);
-  if (r) { r[field] = value; updatePreview(); }
-}
-function renderReferenceInputs() {
-  const container = document.getElementById('refsList');
-  if (!container) return;
-  container.innerHTML = references.map((r,i) => `
-    <div class="rep-item">
-      <div class="rep-item-header">
-        <span>Reference ${i+1}</span>
-        <button class="btn-remove" onclick="removeReference(${r.id})">Remove</button>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Name</label>
-        <input class="form-input" value="${esc(r.name)}" oninput="updateReference(${r.id},'name',this.value)" placeholder="Dr. Jane Doe">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Title</label>
-          <input class="form-input" value="${esc(r.title)}" oninput="updateReference(${r.id},'title',this.value)" placeholder="Professor of Design">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Institution</label>
-          <input class="form-input" value="${esc(r.institution)}" oninput="updateReference(${r.id},'institution',this.value)" placeholder="University of Example">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input class="form-input" value="${esc(r.email)}" oninput="updateReference(${r.id},'email',this.value)" placeholder="jane.doe@example.edu">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Phone</label>
-          <input class="form-input" value="${esc(r.number)}" oninput="updateReference(${r.id},'number',this.value)" placeholder="+1 555 000 0000">
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── SKILLS ─────────────────────────────────────────────
-function handleSkillKeypress(e) { if (e.key==='Enter') addSkill(); }
-function addSkill() {
-  const input = document.getElementById('skillInput');
-  const val = input.value.trim();
-  if (val && !skills.includes(val)) {
-    skills.push(val);
-    renderSkills(); updatePreview();
-  }
-  input.value = '';
-}
-function removeSkill(skill) {
-  skills = skills.filter(s => s !== skill);
-  renderSkills(); updatePreview();
-}
-function renderSkills() {
-  document.getElementById('skillTags').innerHTML = skills.map(s => `
-    <span class="skill-tag">
-      ${esc(s)}
-      <button class="skill-tag-remove" onclick="removeSkill('${esc(s)}')" title="Remove">
-        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </span>
-  `).join('');
-}
-
-// ── PROJECTS ───────────────────────────────────────────
-function addProject() {
-  projects.push({ id: Date.now(), name:'', role:'', description:'', problem:'', outcome:'', link:'', year:'' });
-  renderProjectInputs();
-}
-function removeProject(id) {
-  projects = projects.filter(p => p.id !== id);
-  renderProjectInputs(); updatePreview();
-}
-function updateProject(id, field, value) {
-  const p = projects.find(p => p.id === id);
-  if (p) { p[field] = value; updatePreview(); }
-}
-function renderProjectInputs() {
-  document.getElementById('projList').innerHTML = projects.map((p,i) => `
-    <div class="rep-item">
-      <div class="rep-item-header">
-        <span>${p.name || `Project ${i+1}`}</span>
-        <button class="btn-remove" onclick="removeProject(${p.id})">Remove</button>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Project Name</label>
-          <input class="form-input" value="${esc(p.name)}" oninput="updateProject(${p.id},'name',this.value)" placeholder="e.g. Nyxon Dashboard">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Year</label>
-          <input class="form-input" value="${esc(p.year)}" oninput="updateProject(${p.id},'year',this.value)" placeholder="2024">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Your Role</label>
-          <input class="form-input" value="${esc(p.role)}" oninput="updateProject(${p.id},'role',this.value)" placeholder="e.g. Lead Designer">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Live Link</label>
-          <input class="form-input" value="${esc(p.link)}" oninput="updateProject(${p.id},'link',this.value)" placeholder="myapp.com">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">What you built</label>
-        <textarea class="form-textarea" oninput="updateProject(${p.id},'description',this.value)" placeholder="Describe what the project is and what you specifically built or designed…">${esc(p.description)}</textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Problem it solved</label>
-        <textarea class="form-textarea" oninput="updateProject(${p.id},'problem',this.value)" placeholder="What challenge or problem did this project address?">${esc(p.problem)}</textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Outcome & Impact</label>
-        <textarea class="form-textarea" oninput="updateProject(${p.id},'outcome',this.value)" placeholder="Results and impact — use numbers where possible (e.g. 40% faster, 12k users)">${esc(p.outcome)}</textarea>
-      </div>
-    </div>
-  `).join('');
-}
-
 // ── COVER LETTER ───────────────────────────────────────
 function updateCoverLetter(field, value) {
   coverLetter[field] = value;
@@ -2544,7 +2474,14 @@ function updatePreview() {
 // ── UTILS ──────────────────────────────────────────────
 function esc(s='') { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function contactLine(d, sep=' · ') {
-  return [d.email, d.phone, d.location, d.website].filter(Boolean).join(sep);
+  const parts = [];
+  if (d.email) parts.push(esc(d.email));
+  if (d.phone) parts.push(esc(d.phone));
+  if (d.location) parts.push(esc(d.location));
+  if (d.website) parts.push(makeLink(d.website, d.website));
+  if (d.linkedin) parts.push(makeLink(d.linkedin, d.linkedin));
+  if (d.github) parts.push(makeLink(d.github, d.github));
+  return parts.filter(Boolean).join(sep);
 }
 function dateRange(exp) {
   if (!exp.startDate && !exp.endDate) return '';
@@ -4037,39 +3974,165 @@ function resetAll() {
   updatePreview();
 }
 
-// ── DEMO DATA ──────────────────────────────────────────
-function loadDemoData() {
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  set('firstName','Ava'); set('lastName','Bennett'); set('title','Senior Product Designer');
-  set('email','ava.bennett@studio.io'); set('phone','+1 555 241 8900');
-  set('location','Austin, TX'); set('website','ava.studio');
-  set('targetJob','Lead Product Designer at Nova Labs');
-  set('summary','Creative product designer with 8 years of experience crafting digital experiences for startups and enterprise teams. I bridge business goals with user needs through research-driven design.');
-  experiences = [
-    { id:1, company:'Nova Labs', position:'Senior Product Designer', startDate:'Jan 2022', endDate:'Present', description:'Led design strategy for customer-facing SaaS products. Built and maintained a unified design system used across 6 product lines, reducing design-to-dev time by 40%.' },
-    { id:2, company:'Arc Interactive', position:'Product Designer', startDate:'Jun 2018', endDate:'Dec 2021', description:'Delivered end-to-end digital experiences through user research, wireframing, and cross-functional design reviews for 12+ product launches.' },
-  ];
-  educations = [{ id:3, school:'University of Texas', degree:'B.A.', field:'Visual Communication', year:'2018' }];
-  certifications = [{ id:4, name:'Certified UX Specialist', issuer:'Interaction Design Foundation', year:'2020' }];
-  skills = ['Figma','User Research','Prototyping','Design Systems','UI Animation','Accessibility'];
-  projects = [
-    { id:5, name:'Nyxon Quest Dashboard', role:'Design Lead', description:'Built a career-focused productivity dashboard with a full design system, user flows, and interactive prototype.', problem:'Users were losing track of job applications and had no single place to manage career progress.', outcome:'Shipped to 12,000 users with 78% week-1 retention. Reduced time-to-apply by 34%.', link:'nyxonquest.app', year:'2025' },
-    { id:6, name:'Nova Shield Onboarding', role:'Product Designer', description:'Redesigned the end-to-end onboarding flow for a SaaS security product from research through final handoff.', problem:'New users were dropping off at 60% before completing setup due to a confusing multi-step flow.', outcome:'Drop-off reduced by 34%. First-week retention improved to 78%.', link:'novashield.io', year:'2024' },
-    { id:7, name:'Arc Mobile Design System', role:'Lead Designer', description:'Built a 200-component mobile design system adopted across 3 product teams.', problem:'Three product teams were building inconsistent UIs independently, causing brand drift and duplicated effort.', outcome:'Design-to-dev handoff time cut by 40%. Brand consistency score up from 61% to 94%.', link:'arc.design', year:'2023' },
-  ];
-  coverLetter = {
-    company:'Nova Labs', role:'Lead Product Designer',
-    intro:`I'm genuinely excited to apply for the Lead Product Designer role at Nova Labs. Having shipped products that your team uses daily as a Senior Designer here, I've seen firsthand how design thinking at Nova translates into customer delight — and I want to help shape that at a strategic level.`,
-    body:`Over 8 years, I've built and led design systems, run cross-functional research sprints, and shipped experiences that drive measurable retention gains. At Arc, I reduced onboarding drop-off by 34%. At Nova, I cut design-to-dev handoff time by 40% with a unified system. I pair rigorous process with a high craft bar.`,
-    closing:`I'd love to discuss how I can help Nova Labs' next chapter. Thank you for your time — I look forward to talking soon.`
-  };
+// ── DEMO DATA & PER-PROFILE LOADERS ───────────────────
+// Keep demo definitions accessible to per-profile loaders
+const DEMOS = {
+  ava: {
+    firstName: 'Ava', lastName: 'Bennett', title: 'Senior Product Designer',
+    dob: '1990-07-14', gender: 'Female', nationality: 'United States', maritalStatus: 'Single', languages: 'English (native), Spanish (fluent)', religion: '',
+    linkedin: 'linkedin.com/in/ava-bennett', github: 'github.com/ava-bennett',
+    email: 'ava.bennett@studio.io', phone: '+1 555 241 8900', location: 'Austin, TX', website: 'ava.studio',
+    targetJob: 'Lead Product Designer at Nova Labs',
+    summary: 'Creative product designer with 8 years of experience crafting digital experiences for startups and enterprise teams. I bridge business goals with user needs through research-driven design.',
+    experiences: [
+      { id:1, company:'Nova Labs', position:'Senior Product Designer', startDate:'Jan 2022', endDate:'Present', description:'Led design strategy for customer-facing SaaS products. Built and maintained a unified design system used across 6 product lines, reducing design-to-dev time by 40%.' },
+      { id:2, company:'Arc Interactive', position:'Product Designer', startDate:'Jun 2018', endDate:'Dec 2021', description:'Delivered end-to-end digital experiences through user research, wireframing, and cross-functional design reviews for 12+ product launches.' },
+    ],
+    educations: [
+      { id:3, school:'University of Texas at Austin', degree:'B.A.', field:'Visual Communication', year:'2018' },
+      { id:8, school:'General Assembly', degree:'Certificate', field:'User Experience Design', year:'2016' }
+    ],
+    certifications: [{ id:4, name:'Certified UX Specialist', issuer:'Interaction Design Foundation', year:'2020' }],
+    skills: ['Figma','User Research','Prototyping','Design Systems','UI Animation','Accessibility'],
+    projects: [
+      { id:5, name:'Nyxon Quest Dashboard', role:'Design Lead', description:'Built a career-focused productivity dashboard with a full design system, user flows, and interactive prototype.', problem:'Users were losing track of job applications and had no single place to manage career progress.', outcome:'Shipped to 12,000 users with 78% week-1 retention. Reduced time-to-apply by 34%.', link:'nyxonquest.app', year:'2025' },
+    ],
+    coverLetter: {
+      company:'Nova Labs', role:'Lead Product Designer',
+      intro:`I'm genuinely excited to apply for the Lead Product Designer role at Nova Labs. Having shipped products that your team uses daily as a Senior Designer here, I've seen firsthand how design thinking at Nova translates into customer delight — and I want to help shape that at a strategic level.`,
+      body:`Over 8 years, I've built and led design systems, run cross-functional research sprints, and shipped experiences that drive measurable retention gains. At Arc, I reduced onboarding drop-off by 34%. At Nova, I cut design-to-dev handoff time by 40% with a unified system. I pair rigorous process with a high craft bar.`,
+      closing:`I'd love to discuss how I can help Nova Labs' next chapter. Thank you for your time — I look forward to talking soon.`
+    }
+  },
+  liam: {
+    firstName: 'Liam', lastName: 'Park', title: 'Senior Software Engineer',
+    dob: '1988-03-02', gender: 'Male', nationality: 'United States', maritalStatus: 'Married', languages: 'English (native), Korean (fluent)', religion: '',
+    linkedin: 'linkedin.com/in/liam-park', github: 'github.com/liampark',
+    email: 'liam.park@devco.com', phone: '+1 415 555 0199', location: 'San Francisco, CA', website: 'liam.dev',
+    targetJob: 'Platform Engineering Lead',
+    summary: 'Backend engineer focusing on scalable distributed systems, observability, and platform tooling with 10+ years experience.',
+    experiences: [
+      { id:11, company:'CloudForge', position:'Senior Software Engineer', startDate:'Mar 2020', endDate:'Present', description:'Built microservices and observability tooling that improved system uptime to 99.99%.' },
+      { id:12, company:'DataMesh Inc', position:'Software Engineer', startDate:'Jul 2015', endDate:'Feb 2020', description:'Designed event-driven architectures and data pipelines powering analytics at scale.' },
+    ],
+    educations: [{ id:13, school:'University of California, Berkeley', degree:'M.S.', field:'Computer Science', year:'2015' }],
+    certifications: [{ id:14, name:'GCP Professional Cloud Architect', issuer:'Google', year:'2021' }],
+    skills: ['Golang','Distributed Systems','Kubernetes','Postgres','Observability','CI/CD'],
+    projects: [{ id:15, name:'StreamPilot', role:'Lead Engineer', description:'High-throughput event processing platform.', link:'streampilot.io', year:'2023' }],
+    coverLetter: { company:'CloudForge', role:'Platform Lead', intro:'', body:'', closing:'' }
+  },
+  chen: {
+    firstName: 'Chen', lastName: 'Li', title: 'Assistant Professor',
+    dob: '1982-11-21', gender: 'Female', nationality: 'China', maritalStatus: 'Married', languages: 'Mandarin (native), English (fluent)', religion: '',
+    linkedin: 'linkedin.com/in/chen-li', github: '',
+    email: 'chen.li@uni.edu', phone: '+1 617 555 3344', location: 'Cambridge, MA', website: 'chenli.academia.edu',
+    targetJob: 'Tenure-track Assistant Professor',
+    summary: 'Researcher specialized in human-computer interaction, published 30+ papers and led multiple funded projects.',
+    experiences: [ { id:21, company:'MIT Media Lab', position:'Postdoc Researcher', startDate:'2016', endDate:'2020', description:'Research on adaptive interfaces and community-driven technologies.' } ],
+    educations: [{ id:22, school:'Tsinghua University', degree:'Ph.D.', field:'Computer Science', year:'2015' }],
+    certifications: [],
+    skills: ['HCI Research','Field Studies','Qualitative Analysis','Python','R'],
+    projects: [],
+    coverLetter: { company:'University', role:'Assistant Professor', intro:'', body:'', closing:'' }
+  }
+};
+
+// Shared apply logic used by per-profile loaders
+function applyDemo(demo, profile) {
+  console.log('applyDemo called for', profile);
+  if (!demo) demo = DEMOS['ava'];
+  // quick validation of expected form fields/containers
+  validateFormIds(['firstName','lastName','title','dob','gender','nationality','maritalStatus','languages','religion','linkedin','github','email','phone','location','website','targetJob','summary','clCompany','clRole','clIntro','clBody','clClosing','expList','eduList','certList','projList','refsList']);
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  // basic fields
+  set('firstName', demo.firstName); set('lastName', demo.lastName); set('title', demo.title);
+  set('dob', demo.dob); set('gender', demo.gender); set('nationality', demo.nationality); set('maritalStatus', demo.maritalStatus); set('languages', demo.languages); set('religion', demo.religion);
+  set('linkedin', demo.linkedin); set('github', demo.github);
+  set('email', demo.email); set('phone', demo.phone); set('location', demo.location); set('website', demo.website);
+  set('targetJob', demo.targetJob); set('summary', demo.summary);
+
+  experiences = demo.experiences ? demo.experiences.slice() : [];
+  educations = demo.educations ? demo.educations.slice() : [];
+  certifications = demo.certifications ? demo.certifications.slice() : [];
+  skills = demo.skills ? demo.skills.slice() : [];
+  projects = demo.projects ? demo.projects.slice() : [];
+  coverLetter = demo.coverLetter ? Object.assign({}, demo.coverLetter) : { company:'', role:'', intro:'', body:'', closing:'' };
+
   set('clCompany', coverLetter.company); set('clRole', coverLetter.role);
-  set('clIntro', coverLetter.intro); set('clBody', coverLetter.body);
-  set('clClosing', coverLetter.closing);
-  renderExperienceInputs(); renderEducationInputs(); renderCertificationInputs();
-  renderSkills(); renderProjectInputs();
-  showToast(); updatePreview();
+  set('clIntro', coverLetter.intro); set('clBody', coverLetter.body); set('clClosing', coverLetter.closing);
+
+  // Select a mode/template for each demo to show different layouts
+  if (profile === 'ava') {
+    setMode('resume');
+    setTemplate('modern');
+  } else if (profile === 'liam') {
+    setMode('cv');
+    setTemplate('technical');
+  } else if (profile === 'chen') {
+    setMode('cover');
+    setCoverStyle('classic');
+  }
+
+  renderExperienceInputs(); renderEducationInputs(); renderCertificationInputs(); renderSkills(); renderProjectInputs();
+  // Dispatch input events to ensure any listeners pick up programmatic value changes
+  const dispatchInput = (el) => { if (!el) return; try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) { /* ignore */ } };
+  ['firstName','lastName','title','dob','gender','nationality','maritalStatus','languages','religion','linkedin','github','email','phone','location','website','targetJob','summary','clCompany','clRole','clIntro','clBody','clClosing'].forEach(id => dispatchInput(document.getElementById(id)));
+  // also dispatch for dynamically rendered repeatable lists
+  ['expList','eduList','certList','projList','refsList'].forEach(containerId => {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    c.querySelectorAll('input,textarea').forEach(dispatchInput);
+  });
+
+  showToast(`Loaded demo: ${demo.firstName || profile}`);
+  try { if (typeof demoLogAdd === 'function') demoLogAdd(profile, 'processed'); } catch (e) {}
+  try {
+    if (typeof updatePreview === 'function') updatePreview();
+    else console.warn('updatePreview is not a function');
+  } catch (err) {
+    console.error('Error updating preview after demo load', err);
+    try { if (typeof demoLogAdd === 'function') demoLogAdd(profile + ' (preview error)', 'error'); } catch (e) {}
+  }
+  const m = document.getElementById('demoMenu'); if (m) m.style.display = 'none';
 }
+
+// Per-profile loader functions (exported on window for direct calls)
+function loadAva() { applyDemo(DEMOS.ava, 'ava'); }
+function loadLiam() { applyDemo(DEMOS.liam, 'liam'); }
+function loadChen() { applyDemo(DEMOS.chen, 'chen'); }
+
+// Backwards-compatible dispatcher — prefers specific loader function if present
+function loadDemoData(profile = 'ava') {
+  const name = String(profile || 'ava').toLowerCase();
+  const fnName = 'load' + (name.charAt(0).toUpperCase() + name.slice(1));
+  if (typeof window[fnName] === 'function') return window[fnName]();
+  const demo = DEMOS[name] || DEMOS['ava'];
+  return applyDemo(demo, name);
+}
+
+// Expose real loader and per-profile functions
+window.loadAva = loadAva; window.loadLiam = loadLiam; window.loadChen = loadChen;
+window.__realLoadDemo = loadDemoData;
+window.loadDemoData = loadDemoData;
+// Mark loader ready and enable UI
+try { setLoaderReady(true); } catch (e) {}
+// Drain any queued demo requests (FIFO)
+if (window._queuedDemoProfiles && window._queuedDemoProfiles.length) {
+  try {
+    while (window._queuedDemoProfiles.length) {
+      const p = window._queuedDemoProfiles.shift();
+      try {
+        window.__realLoadDemo(p);
+        try { if (typeof demoLogAdd === 'function') demoLogAdd(p, 'processed'); } catch (e) {}
+      } catch (e) {
+        console.error('Queued demo load failed for', p, e);
+        try { if (typeof demoLogAdd === 'function') demoLogAdd(p, 'error'); } catch (ee) {}
+      }
+    }
+  } catch (e) { console.error('Error draining queued demos', e); }
+  window._queuedDemoProfiles = [];
+}
+
 
 /* =====================================================
    ANIMATION ENGINE — NYXON MOTION SYSTEM
@@ -4376,39 +4439,8 @@ function resetAll() {
   updatePreview();
 }
 
-// ── DEMO DATA ──────────────────────────────────────────
-function loadDemoData() {
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  set('firstName','Ava'); set('lastName','Bennett'); set('title','Senior Product Designer');
-  set('email','ava.bennett@studio.io'); set('phone','+1 555 241 8900');
-  set('location','Austin, TX'); set('website','ava.studio');
-  set('targetJob','Lead Product Designer at Nova Labs');
-  set('summary','Creative product designer with 8 years of experience crafting digital experiences for startups and enterprise teams. I bridge business goals with user needs through research-driven design.');
-  experiences = [
-    { id:1, company:'Nova Labs', position:'Senior Product Designer', startDate:'Jan 2022', endDate:'Present', description:'Led design strategy for customer-facing SaaS products. Built and maintained a unified design system used across 6 product lines, reducing design-to-dev time by 40%.' },
-    { id:2, company:'Arc Interactive', position:'Product Designer', startDate:'Jun 2018', endDate:'Dec 2021', description:'Delivered end-to-end digital experiences through user research, wireframing, and cross-functional design reviews for 12+ product launches.' },
-  ];
-  educations = [{ id:3, school:'University of Texas', degree:'B.A.', field:'Visual Communication', year:'2018' }];
-  certifications = [{ id:4, name:'Certified UX Specialist', issuer:'Interaction Design Foundation', year:'2020' }];
-  skills = ['Figma','User Research','Prototyping','Design Systems','UI Animation','Accessibility'];
-  projects = [
-    { id:5, name:'Nyxon Quest Dashboard', role:'Design Lead', description:'Built a career-focused productivity dashboard with a full design system, user flows, and interactive prototype.', problem:'Users were losing track of job applications and had no single place to manage career progress.', outcome:'Shipped to 12,000 users with 78% week-1 retention. Reduced time-to-apply by 34%.', link:'nyxonquest.app', year:'2025' },
-    { id:6, name:'Nova Shield Onboarding', role:'Product Designer', description:'Redesigned the end-to-end onboarding flow for a SaaS security product from research through final handoff.', problem:'New users were dropping off at 60% before completing setup due to a confusing multi-step flow.', outcome:'Drop-off reduced by 34%. First-week retention improved to 78%.', link:'novashield.io', year:'2024' },
-    { id:7, name:'Arc Mobile Design System', role:'Lead Designer', description:'Built a 200-component mobile design system adopted across 3 product teams.', problem:'Three product teams were building inconsistent UIs independently, causing brand drift and duplicated effort.', outcome:'Design-to-dev handoff time cut by 40%. Brand consistency score up from 61% to 94%.', link:'arc.design', year:'2023' },
-  ];
-  coverLetter = {
-    company:'Nova Labs', role:'Lead Product Designer',
-    intro:`I'm genuinely excited to apply for the Lead Product Designer role at Nova Labs. Having shipped products that your team uses daily as a Senior Designer here, I've seen firsthand how design thinking at Nova translates into customer delight — and I want to help shape that at a strategic level.`,
-    body:`Over 8 years, I've built and led design systems, run cross-functional research sprints, and shipped experiences that drive measurable retention gains. At Arc, I reduced onboarding drop-off by 34%. At Nova, I cut design-to-dev handoff time by 40% with a unified system. I pair rigorous process with a high craft bar.`,
-    closing:`I'd love to discuss how I can help Nova Labs' next chapter. Thank you for your time — I look forward to talking soon.`
-  };
-  set('clCompany', coverLetter.company); set('clRole', coverLetter.role);
-  set('clIntro', coverLetter.intro); set('clBody', coverLetter.body);
-  set('clClosing', coverLetter.closing);
-  renderExperienceInputs(); renderEducationInputs(); renderCertificationInputs();
-  renderSkills(); renderProjectInputs();
-  showToast(); updatePreview();
-}
+/* DEMO DATA is defined earlier as a multi-profile loader (loadDemoData(profile)).
+   Removed duplicate single-profile function to ensure correct demo selection. */
 
 /* =====================================================
    ANIMATION ENGINE — NYXON MOTION SYSTEM
