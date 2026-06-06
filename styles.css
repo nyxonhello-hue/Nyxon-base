@@ -1,0 +1,636 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+/* =====================================================
+   NYXON BASE — Resume Studio CSS
+   -----------------------------------------------------
+   Supports TWO THEMES: light and dark.
+
+   Theme mechanism:
+   - Root sets `data-theme="dark" | "light"` (handled in script.js)
+   - CSS variables are overridden per theme
+   ===================================================== */
+
+/* ===========================
+   DESIGN TOKENS (DARK DEFAULT)
+=========================== */
+:root {
+  --c-bg: #0d0d14;
+  --c-surface: #13131f;
+  --c-surface-2: #1a1a2a;
+  --c-border: rgba(255,255,255,0.07);
+  --c-border-hover: rgba(255,255,255,0.14);
+  --c-text: #f0eff7;
+  --c-muted: #7a7a99;
+  --c-accent: #8b5cf6;
+  --c-accent-2: #06b6d4;
+  --c-accent-warm: #f59e0b;
+  --c-accent-rose: #f43f5e;
+  --radius-card: 16px;
+  --radius-input: 10px;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-serif: 'DM Serif Display', serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+/* ===========================
+   DESIGN TOKENS (LIGHT)
+=========================== */
+:root[data-theme="light"] {
+  --c-bg: #f6f7fb;
+  --c-surface: #ffffff;
+  --c-surface-2: #f0f2f8;
+  --c-border: rgba(17,24,39,0.10);
+  --c-border-hover: rgba(17,24,39,0.18);
+  --c-text: #0f172a;
+  --c-muted: rgba(15,23,42,0.62);
+  --c-accent: #6d28d9;
+  --c-accent-2: #0891b2;
+  --c-accent-warm: #d97706;
+  --c-accent-rose: #e11d48;
+}
+
+/* ===========================
+   RESET & BASE
+=========================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: var(--font-body);
+  background: var(--c-bg);
+  color: var(--c-text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===========================
+   SCROLLBARS
+=========================== */
+* { scrollbar-width: thin; scrollbar-color: rgba(139,92,246,0.3) transparent; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 4px; }
+
+/* ===========================
+   LAYOUT
+=========================== */
+#app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+}
+#main-area {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+#sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--c-surface);
+  border-right: 1px solid var(--c-border);
+  padding: 16px 14px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Make sidebar sections tall enough so users can see the full input forms.
+   Each section grows to its content instead of being visually compressed. */
+#sidebar .sidebar-section {
+  height: auto;
+}
+
+#sidebar .sidebar-section .section-body {
+  min-height: 70px;
+}
+
+#preview-area {
+  overflow-y: auto;
+  background: var(--c-preview-bg, #1c1c2e);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 32px 80px;
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ===========================
+   HEADER
+=========================== */
+#app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  position: relative;
+  z-index: 50;
+  height: 56px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 18px; height: 18px; color: white; }
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #c4b5fd, #67e8f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-sub { font-size: 10px; color: var(--c-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* ===========================
+   MODE TABS
+=========================== */
+.mode-tabs {
+  display: flex;
+  background: var(--c-bg);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+.mode-tab {
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--c-muted);
+  transition: all 0.18s ease;
+  letter-spacing: 0.01em;
+  font-family: var(--font-body);
+}
+.mode-tab:hover { color: var(--c-text); }
+.mode-tab.active {
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.mode-tab.active[data-mode="resume"] { color: var(--c-accent); }
+.mode-tab.active[data-mode="cv"] { color: var(--c-accent-2); }
+.mode-tab.active[data-mode="cover"] { color: var(--c-accent-warm); }
+.mode-tab.active[data-mode="portfolio"] { color: var(--c-accent-rose); }
+
+/* ===========================
+   HEADER ACTIONS
+=========================== */
+.hdr-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+  font-family: var(--font-body);
+  transition: all 0.15s ease;
+}
+.hdr-btn:hover { color: var(--c-text); border-color: var(--c-border-hover); }
+.hdr-btn-export {
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, var(--c-accent), var(--c-accent-2));
+  color: white;
+  font-family: var(--font-body);
+  transition: all 0.15s ease;
+  display: flex; align-items: center; gap: 6px;
+  letter-spacing: 0.01em;
+}
+.hdr-btn-export:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(139,92,246,0.4); }
+.hdr-btn-export:active { transform: translateY(0); }
+.export-dropdown {
+  position: relative;
+}
+.export-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 220px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  z-index: 200;
+  flex-direction: column;
+  gap: 2px;
+}
+.export-menu.open { display: flex; }
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--c-text);
+  cursor: pointer;
+  font-family: var(--font-body);
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s ease;
+}
+.export-option:hover { background: rgba(255,255,255,0.06); }
+.export-option svg { flex-shrink: 0; color: var(--c-accent); }
+.export-option-label { font-size: 12px; font-weight: 700; }
+.export-option-sub { font-size: 10px; color: var(--c-muted); margin-top: 1px; }
+
+
+
+/* ===========================
+   THEME TOGGLE
+=========================== */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 3px;
+}
+:root[data-theme="light"] .theme-toggle {
+  background: rgba(15,23,42,0.03);
+}
+.theme-btn {
+  width: 34px;
+  height: 26px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--c-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.theme-btn:hover { color: var(--c-text); background: rgba(255,255,255,0.04); }
+.theme-btn.active {
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+:root[data-theme="light"] .theme-btn.active {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+/* ===========================
+   SIDEBAR SECTIONS
+=========================== */
+.sidebar-section {
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-card);
+  /* allow header to remain visible even when multiple sections are opened */
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.section-header:hover { background: rgba(255,255,255,0.03); }
+
+.section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  /* higher contrast in the sidebar */
+  color: rgba(240, 239, 247, 0.92);
+  display: flex; align-items: center; gap: 8px;
+}
+
+:root[data-theme="light"] .section-title {
+  color: rgba(15, 23, 42, 0.86);
+}
+.section-title-icon { width: 14px; height: 14px; opacity: 0.7; }
+.section-chevron {
+  width: 14px; height: 14px;
+  color: var(--c-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.section-body.collapsed { display: none; }
+
+/* ===========================
+   TEMPLATE GRID
+=========================== */
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.tpl-card {
+  border-radius: 10px;
+  padding: 8px;
+  border: 1.5px solid var(--c-border);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: center;
+  background: rgba(255,255,255,0.02);
+}
+.tpl-card:hover { border-color: var(--c-border-hover); background: rgba(255,255,255,0.04); }
+.tpl-card.active { border-color: var(--c-accent); background: rgba(139,92,246,0.1); }
+.tpl-thumb {
+  height: 42px; border-radius: 6px; margin-bottom: 5px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; font-size: 9px; font-weight: 700;
+}
+.tpl-name { font-size: 9px; font-weight: 700; color: var(--c-text); letter-spacing: 0.03em; }
+.tpl-sub { font-size: 8px; color: var(--c-muted); }
+
+/* ===========================
+   FORM INPUTS
+=========================== */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label {
+  font-size: 10px;
+  font-weight: 800;
+  /* higher contrast in the sidebar */
+  color: rgba(240, 239, 247, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+:root[data-theme="light"] .form-label {
+  color: rgba(15, 23, 42, 0.82);
+}
+.form-input, .form-textarea {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-input);
+  color: var(--c-text);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  padding: 8px 11px;
+  transition: all 0.18s ease;
+  width: 100%;
+}
+:root[data-theme="light"] .form-input,
+:root[data-theme="light"] .form-textarea {
+  background: rgba(15,23,42,0.02);
+}
+.form-input::placeholder, .form-textarea::placeholder { color: rgba(122,122,153,0.6); }
+.form-input:focus, .form-textarea:focus {
+  outline: none;
+  border-color: rgba(139,92,246,0.6);
+  background: rgba(139,92,246,0.05);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+.form-textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+/* ===========================
+   SKILL TAGS
+=========================== */
+.skills-container {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;
+}
+.skill-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  background: rgba(139,92,246,0.12);
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: #c4b5fd;
+  cursor: default;
+}
+.skill-tag-remove {
+  width: 12px; height: 12px; cursor: pointer; opacity: 0.6;
+  transition: opacity 0.15s; flex-shrink: 0;
+  background: none; border: none; color: inherit; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.skill-tag-remove:hover { opacity: 1; }
+.skill-add-row { display: flex; gap: 6px; }
+.skill-add-input {
+  flex: 1; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--c-border); border-radius: 8px;
+  color: var(--c-text); font-family: var(--font-body); font-size: 12px;
+  padding: 6px 10px;
+}
+:root[data-theme="light"] .skill-add-input { background: rgba(15,23,42,0.02); }
+.skill-add-input:focus { outline: none; border-color: rgba(139,92,246,0.5); }
+.btn-add {
+  padding: 6px 12px; border-radius: 8px;
+  background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);
+  color: #c4b5fd; font-size: 11px; font-weight: 700; cursor: pointer;
+  font-family: var(--font-body); white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.btn-add:hover { background: rgba(139,92,246,0.25); }
+
+/* ===========================
+   REPEATABLE ITEMS (exp, edu, cert)
+=========================== */
+.rep-item {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.rep-item-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; font-weight: 700; color: var(--c-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.btn-remove {
+  padding: 2px 7px; border-radius: 5px;
+  background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2);
+  color: #fb7185; font-size: 10px; font-weight: 700; cursor: pointer;
+  font-family: var(--font-body); transition: all 0.15s ease;
+}
+.btn-remove:hover { background: rgba(244,63,94,0.2); }
+.btn-add-item {
+  padding: 7px 12px; border-radius: 8px;
+  background: rgba(255,255,255,0.03); border: 1px dashed var(--c-border);
+  color: var(--c-muted); font-size: 11px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body); width: 100%; text-align: center;
+  transition: all 0.15s ease;
+}
+.btn-add-item:hover { border-color: var(--c-border-hover); color: var(--c-text); background: rgba(255,255,255,0.05); }
+
+/* ===========================
+   COVER LETTER / PORTFOLIO STYLE PICKER
+=========================== */
+.style-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.style-card {
+  padding: 9px 10px; border-radius: 8px;
+  border: 1.5px solid var(--c-border); cursor: pointer;
+  background: rgba(255,255,255,0.02);
+  transition: all 0.18s ease;
+}
+.style-card:hover { border-color: var(--c-border-hover); }
+.style-card.active { border-color: var(--c-accent); background: rgba(139,92,246,0.08); }
+.style-card-name { font-size: 11px; font-weight: 700; color: var(--c-text); }
+.style-card-sub { font-size: 9px; color: var(--c-muted); margin-top: 1px; }
+
+/* ===========================
+   ZOOM CONTROL
+=========================== */
+#zoom-control {
+  position: sticky; top: 0; z-index: 10;
+  width: 100%;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 0 16px;
+}
+#zoom-control input[type=range] {
+  width: 80px; accent-color: var(--c-accent);
+  cursor: pointer;
+}
+#zoom-label {
+  font-size: 11px; color: var(--c-muted);
+  font-family: var(--font-mono); min-width: 36px;
+}
+
+/* ===========================
+   PREVIEW WRAPPER
+=========================== */
+#preview-scaler {
+  transform-origin: top center;
+  transition: transform 0.2s ease;
+  width: 210mm;
+}
+
+/* ===========================
+   DOCUMENT BASE (for all outputs)
+=========================== */
+.doc-page {
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.3);
+  color: #1a1a2a;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===========================
+   AI TOAST
+=========================== */
+#ai-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(0);
+  background: var(--c-surface-2); border: 1px solid var(--c-border);
+  border-radius: 999px; padding: 8px 20px;
+  font-size: 12px; color: var(--c-text);
+  display: flex; align-items: center; gap: 8px;
+  opacity: 1; transition: all 0.3s ease; z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+#ai-toast.hidden { opacity: 0; transform: translateX(-50%) translateY(20px); pointer-events: none; }
+.ai-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--c-accent);
+  animation: pulse-glow 1.4s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.7); }
+  50% { box-shadow: 0 0 0 5px rgba(139,92,246,0); }
+}
+
+/* ===========================
+   RESPONSIVE — collapse at ≤900px
+=========================== */
+@media (max-width: 900px) {
+  #main-area { grid-template-columns: 1fr; }
+  #preview-area { display: none; }
+}
+
+/* ===========================
+   SECTION COLLAPSE ANIMATION
+=========================== */
+.section-body {
+  /* Keep body scrollable but never clip sibling headers */
+  overflow: hidden;
+  padding: 4px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  /* Per-section scrollbar */
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* max-height removed so opening multiple panels doesn't cause height reduction/clipping */
+}
+
+.section-body.collapsed { display: none; }
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.section-body:not(.collapsed) {
+  animation: fadeSlide 0.2s ease both;
+}
+
+/* ===========================
+   ANIMATIONS (original file kept)
+=========================== */
+#app-shell { animation: appFadeIn 0.4s ease both; }
+@keyframes appFadeIn { from { opacity: 0; } to { opacity: 1; } }
+#app-header { animation: headerSlideDown 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes headerSlideDown { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: translateY(0); } }
+#preview-area { animation: previewRise 0.55s 0.2s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes previewRise { from { opacity: 0; transform: translateY(32px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* minimal: keep existing utility animations & cursor glow etc as in original */
+#cursor-glow {
+  position: fixed;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: left 0.12s ease, top 0.12s ease;
+  z-index: 0;
+  mix-blend-mode: screen;
+}
+
+/* Ensure theme toggle icon button has correct base color */
+:root[data-theme="light"] .theme-btn { color: var(--c-muted); }
+
+/* ---- keep remaining original CSS functionality for classes referenced by JS ---- */
+.tpl-card { position: relative; }
+
+/* Scroll-triggered thumb color already handled; keep accents */
