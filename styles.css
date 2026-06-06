@@ -582,12 +582,54 @@ body {
 }
 
 /* ===========================
-   RESPONSIVE — collapse at ≤900px
+   RESPONSIVE — mobile & tablet
+   - Provide an Edit / Preview toggle on small screens
+   - Default mobile view: Editor (sidebar). Toggle shows Preview fullscreen.
+   - Improve touch targets and spacing on small screens.
 =========================== */
 @media (max-width: 900px) {
-  #main-area { grid-template-columns: 1fr; }
-  #preview-area { display: none; }
+  #main-area { grid-template-columns: 1fr; gap: 0; }
+  /* Sidebar first */
+  #sidebar { order: 1; padding-bottom: 28px; width: 100%; }
+
+  /* By default hide the preview on mobile to focus on editing. The toggle
+     button will add `mobile-preview-open` on the body to show it fullscreen. */
+  #preview-area { display: none; order: 2; padding: 18px 16px 80px; }
+
+  /* When the mobile preview is open, hide the sidebar and surface the preview */
+  body.mobile-preview-open #sidebar { display: none; }
+  body.mobile-preview-open #preview-area { display: block; }
+  body.mobile-preview-open #preview-scaler { width: 100%; transform: none; }
+  body.mobile-preview-open .doc-page { width: 100%; min-height: auto; box-shadow: none; border-radius: 8px; }
+
+  /* Make form rows single column for narrow screens */
+  .form-row { grid-template-columns: 1fr; }
+
+  /* Make header actions wrap and increase tap targets */
+  #app-header { padding: 8px 12px; gap: 8px; }
+  .hdr-btn { padding: 10px 14px; font-size: 14px; }
+  .hdr-btn-export { padding: 10px 16px; font-size: 14px; }
+
+  /* Zoom control compresses on small screens */
+  #zoom-control { justify-content: center; padding-bottom: 8px; }
+
+  /* Ensure the mobile toggle button becomes visible on small screens */
+  .mobile-view-toggle { display: inline-flex; }
 }
+
+/* Extra small devices — improve spacing and hit areas */
+@media (max-width: 480px) {
+  body { font-size: 15px; }
+  .form-input, .form-textarea { padding: 12px 12px; font-size: 15px; }
+  .btn-add, .btn-add-item, .btn-remove { padding: 10px 12px; }
+  .mode-tab { padding: 8px 10px; font-size: 13px; }
+  .demo-log { max-width: 100%; margin-left: 0; }
+  .hdr-btn, .hdr-btn-export { width: 100%; box-sizing: border-box; }
+}
+
+/* Hide the mobile toggle by default on wider screens */
+.mobile-view-toggle { display: none; align-items: center; justify-content: center; gap: 8px; }
+.mobile-view-toggle svg { width: 14px; height: 14px; }
 
 /* ===========================
    SECTION COLLAPSE ANIMATION

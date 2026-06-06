@@ -361,6 +361,48 @@ function updateZoom(val) {
   document.getElementById('zoom-label').textContent = Math.round(val*100) + '%';
 }
 
+// ===== Mobile Edit/Preview Toggle =====
+function toggleMobileView() {
+  try {
+    const opened = document.body.classList.toggle('mobile-preview-open');
+    updateMobileToggleUI();
+    if (opened && typeof updatePreview === 'function') {
+      try { updatePreview(); } catch (e) { console.error('updatePreview error after mobile toggle', e); demoLogAdd('preview','error'); }
+    }
+  } catch (e) { console.error('toggleMobileView error', e); }
+}
+
+function updateMobileToggleUI() {
+  const btn = document.getElementById('mobileViewToggle');
+  if (!btn) return;
+  const open = document.body.classList.contains('mobile-preview-open');
+  btn.textContent = open ? 'Show Editor' : 'Show Preview';
+  btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+}
+
+// Initialize mobile toggle visibility and state
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('mobileViewToggle');
+  if (btn) {
+    const isMobile = window.innerWidth <= 900;
+    if (isMobile) {
+      btn.style.display = 'inline-flex';
+      // default to editor-first (preview hidden)
+      document.body.classList.remove('mobile-preview-open');
+    } else {
+      btn.style.display = 'none';
+      document.body.classList.remove('mobile-preview-open');
+    }
+    updateMobileToggleUI();
+    window.addEventListener('resize', () => {
+      const show = window.innerWidth <= 900;
+      btn.style.display = show ? 'inline-flex' : 'none';
+      if (!show) document.body.classList.remove('mobile-preview-open');
+      updateMobileToggleUI();
+    });
+  }
+});
+
 // ── FORM DATA ──────────────────────────────────────────
 function getFormData() {
   return {
