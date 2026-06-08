@@ -52,18 +52,13 @@
     <div class="mode-tabs">
       <button class="mode-tab active" data-mode="resume" onclick="setMode('resume')">Resume</button>
       <button class="mode-tab" data-mode="cv" onclick="setMode('cv')">CV</button>
-      <button class="mode-tab" data-mode="cover" onclick="setMode('cover')">Cover Letter</button>
+      <button class="mode-tab" data-mode="cover" onclick="setMode('cover')">Cover Letter/ Application Letter</button>
       <button class="mode-tab" data-mode="portfolio" onclick="setMode('portfolio')">Portfolio</button>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="demo-dropdown desktop-only" style="position:relative;">
-        <button class="hdr-btn" id="loadDemoBtn" onclick="toggleDemoMenu(event)">Load Demo</button>
-        <div class="demo-menu" id="demoMenu" style="display:none;position:absolute;left:0;top:38px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:40;padding:4px;min-width:220px;">
-          <button class="export-option" data-demo="ava" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Designer — Ava Bennett</button>
-          <button class="export-option" data-demo="liam" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Engineer — Liam Park</button>
-          <button class="export-option" data-demo="chen" style="display:block;width:220px;text-align:left;padding:8px 12px;border:none;background:transparent;">Academic — Dr. Chen Li</button>
-        </div>
+        <button class="hdr-btn" id="loadDemoBtn" onclick="loadDemo()">Load Demo</button>
       </div>
       <button class="hdr-btn desktop-only" onclick="resetAll()">Reset</button>
 
@@ -119,12 +114,8 @@
       <!-- Mobile actions menu (contains demo profiles, reset, export, theme) -->
       <div id="mobileMenu" class="mobile-menu" style="display:none;">
         <div class="mobile-menu-inner">
-          <button class="mobile-menu-item" onclick="toggleMobileDemoSubmenu()">Load Demo ▸</button>
-          <div id="mobileDemoSubmenu" class="mobile-submenu" style="display:none;">
-            <button class="mobile-menu-item" onclick="(window.loadAva ? window.loadAva() : window.loadDemoData('ava')); closeMobileMenu()">Designer — Ava Bennett</button>
-            <button class="mobile-menu-item" onclick="(window.loadLiam ? window.loadLiam() : window.loadDemoData('liam')); closeMobileMenu()">Engineer — Liam Park</button>
-            <button class="mobile-menu-item" onclick="(window.loadChen ? window.loadChen() : window.loadDemoData('chen')); closeMobileMenu()">Academic — Dr. Chen Li</button>
-          </div>
+          <button class="mobile-menu-item"  onclick="loadDemoData()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-violet-600 transition-colors rounded-lg hover:bg-slate-100">
+                    Load Demo  </button>
           <button class="mobile-menu-item" onclick="resetAll(); closeMobileMenu();" style="color:var(--c-muted);">↺ Reset</button>
           <button class="mobile-menu-item mobile-menu-item--export" onclick="exportToPDF(); closeMobileMenu();">⬇ Export PDF</button>
           <button class="mobile-menu-item mobile-menu-item--export" onclick="exportToDocx(); closeMobileMenu();">⬇ Export DOCX</button>
@@ -221,6 +212,10 @@
           <div class="form-group">
             <label class="form-label">Professional Title</label>
             <input class="form-input" id="title" oninput="updatePreview()" placeholder="Senior Product Designer">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input class="form-input" id="date" oninput="updatePreview()" placeholder="YYYY-MM-DD">
           </div>
           <div class="form-group" id="targetJobGroup">
             <label class="form-label">Target Role <span style="color:rgba(122,122,153,0.6);font-weight:400;text-transform:none;">(highlights matching skills)</span></label>

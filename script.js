@@ -25,7 +25,10 @@
 // currentMode: selected top-level document type (resume, cv, cover, portfolio)
 let currentMode     = 'resume';
 // currentTemplate: selected resume visual style for resume/cv modes
-let currentTemplate = 'modern';
+// Separate template preferences for resume and CV modes
+let resumeTemplate = 'modern';
+let cvTemplate = 'academic';
+let currentTemplate = resumeTemplate;
 // currentCoverStyle: selected cover letter layout style
 let currentCoverStyle   = 'editorial';
 // currentPortStyle: selected portfolio layout style
@@ -39,31 +42,6 @@ let skills       = [];
 let projects     = [];
 let references   = [];
 
-// Provide a safe global loader API early so UI handlers can call it
-// even if the real loader is defined later in the file. Calls will be
-// queued and executed once the real loader is available.
-if (!window.loadDemoData) {
-  // hold any demo requests that occur before the real loader is defined
-  window._queuedDemoProfiles = window._queuedDemoProfiles || [];
-  window.loadDemoData = function(profile) {
-    // If a demo was already loaded, ignore further requests
-      // allow multiple demo loads; do not block if one was previously loaded
-    if (window.__realLoadDemo && typeof window.__realLoadDemo === 'function') {
-      return window.__realLoadDemo(profile);
-    }
-    // queue the request for later (support a single queued demo)
-    if (!window._queuedDemoProfiles.includes(profile)) {
-      window._queuedDemoProfiles.push(profile);
-      console.warn('loadDemoData called before loader ready, queued:', profile);
-      // show a non-blocking toast if the toast helper exists
-      if (typeof showToast === 'function') showToast(`Demo queued: ${profile}`);
-      // add a visible demo log entry if the UI helper exists
-      if (typeof demoLogAdd === 'function') demoLogAdd(profile, 'queued');
-    } else {
-      try { if (typeof showToast === 'function') showToast('Demo already queued'); } catch (e) {}
-    }
-  };
-}
 
 // Helper to append entries to the demo log UI (if present)
 function demoLogAdd(profile, status) {
@@ -87,17 +65,107 @@ function demoLogAdd(profile, status) {
   } catch (e) { /* ignore logging errors */ }
 }
 
-// Loader readiness flag & helper
-window.loaderReady = false;
-function setLoaderReady(val) {
-  window.loaderReady = !!val;
-  const btn = document.getElementById('loadDemoBtn');
-  if (btn) {
-    if (window.loaderReady) btn.removeAttribute('disabled');
-    else btn.setAttribute('disabled', '');
-  }
-  try { if (window.loaderReady && typeof demoLogAdd === 'function') demoLogAdd('loader','processed'); } catch (e) {}
+// Public demo loader: single-button action that loads a demo profile and updates preview.
+
+function loadDemoData() {
+    // Basic identity shared across modes
+      const setIf = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; console.log(`Set ${id} to ${val}`); };
+    setIf('firstName','Ava');
+    setIf('lastName','Bennett');
+    setIf('title','Product Designer');
+    // Identity date (new field)
+    setIf('date','1994-07-21');
+
+    // Mode-specific demo population
+    if (currentMode === 'resume') {
+      setIf('email','ava.bennett@example.com');
+      setIf('phone','+1 555 123 4567');
+      setIf('location','Austin, TX');
+      setIf('website','ava.design');
+      setIf('summary','Creative product designer with 8 years of experience bringing digital experiences to life for startups and enterprise teams.');
+      setIf('linkedin','linkedin.com/in/ava-bennett');
+      setIf('github','github.com/ava-bennett');
+      setIf('targetJob','Lead Product Designer at Nova Labs');
+      experiences = [
+        { id: Date.now() + 1, company: 'Nova Labs', position: 'Senior Product Designer', startDate: 'Jan 2022', endDate: 'Present', description: 'Led design strategy for customer-facing SaaS products.' },
+        { id: Date.now() + 2, company: 'Arc Interactive', position: 'Product Designer', startDate: 'Jun 2018', endDate: 'Dec 2021', description: 'Delivered polished digital experiences through user research and prototyping.' }
+      ];
+      educations = [ { id: Date.now() + 3, school: 'University of Texas', degree: 'B.A.', field: 'Visual Communication', year: '2018' } ];
+      certifications = [ { id: Date.now() + 4, name: 'Certified UX Specialist', issuer: 'Interaction Design Foundation', year: '2020' } ];
+      skills = ['Figma','User Research','Prototyping','Design Systems','UI Animation'];
+      projects = [];
+      references = [];
+    } else if (currentMode === 'cv') {
+      // CV shows more personal details and references
+      setIf('email','ava.bennett@example.com');
+      setIf('phone','+1 555 123 4567');
+      setIf('location','Austin, TX');
+      setIf('website','ava.design');
+      setIf('summary','Product designer and researcher with academic publications and extensive industry experience.');
+      setIf('linkedin','linkedin.com/in/ava-bennett');
+      setIf('github','github.com/ava-bennett');
+      setIf('dob','1992-04-15');
+      // Mirror general identity date if desired
+      setIf('date','1992-04-15');
+      setIf('gender','Female');
+      setIf('nationality','United States');
+      setIf('maritalStatus','Single');
+      setIf('languages','English (native), Spanish (conversational)');
+      setIf('religion','');
+      experiences = [
+        { id: Date.now() + 5, company: 'Nova Labs', position: 'Senior Product Designer', startDate: 'Jan 2022', endDate: 'Present', description: 'Led design strategy and published work on user onboarding.' },
+        { id: Date.now() + 6, company: 'Arc Interactive', position: 'Product Designer', startDate: 'Jun 2018', endDate: 'Dec 2021', description: 'Research-driven design across web and mobile.' }
+      ];
+      educations = [ { id: Date.now() + 7, school: 'University of Texas', degree: 'B.A.', field: 'Visual Communication', year: '2018' } ];
+      certifications = [ { id: Date.now() + 8, name: 'Certified UX Specialist', issuer: 'Interaction Design Foundation', year: '2020' } ];
+      skills = ['Figma','User Research','Prototyping','Design Systems','Accessibility'];
+      projects = [ { id: Date.now()+11, name:'Nyxon Quest Dashboard', role:'Design Lead', description:'Design system and prototype.', link:'nyxonquest.app', year:'2025' } ];
+      references = [
+        { id: Date.now()+21, name: 'Dr. Lina Torres', title: 'Design Mentor', institution: 'Interaction Design Foundation', email: 'lina.torres@example.com', number: '+1 555 222 3333' },
+        { id: Date.now()+22, name: 'Mark Ruiz', title: 'Product Lead', institution: 'Nova Labs', email: 'mark.ruiz@novalabs.io', number: '+1 555 444 5555' }
+      ];
+    } else if (currentMode === 'cover') {
+      // Cover letter demo: minimal identity + cover letter fields
+      setIf('email','ava.bennett@example.com');
+      setIf('phone','+1 555 123 4567');
+      setIf('location','Austin, TX');
+      coverLetter = {
+        company: 'Nova Labs',
+        role: 'Lead Product Designer',
+        intro: 'I am excited to apply for the Lead Product Designer role at Nova Labs.',
+        body: 'With 8 years of experience delivering polished digital experiences and leading collaborative product teams, I drive design decisions that connect business goals to delightful user outcomes.',
+        closing: 'Thank you for your consideration. I look forward to speaking with you.'
+      };
+      // Add a date for the cover letter header
+      coverLetter.date = new Date().toISOString().split('T')[0];
+      // keep other arrays empty
+      experiences = []; educations = []; certifications = []; skills = []; projects = []; references = [];
+    } else if (currentMode === 'portfolio') {
+      // Portfolio demo focuses on projects
+      setIf('email','ava.bennett@example.com');
+      setIf('website','ava.design');
+      setIf('summary','Designer focused on case-study driven portfolio work.');
+      projects = [
+        { id: Date.now() + 11, name: 'Nyxon Quest Dashboard', role: 'Design Lead', description: 'Led the design system and prototype.', link: 'nyxonquest.app', year: '2025' },
+        { id: Date.now() + 12, name: 'Nyxon Shield Portfolio', role: 'Product Designer', description: 'Case study layout and brand system.', link: 'nyxonshield.app', year: '2024' }
+      ];
+      experiences = []; educations = []; certifications = []; skills = ['Design Systems','Prototyping']; references = [];
+      // keep identity date for portfolio demo too
+      setIf('date','1994-07-21');
+    }
+
+    // Re-render lists and preview
+    renderExperienceInputs();
+    renderEducationInputs();
+    renderCertificationInputs();
+    renderSkills();
+    renderCoverLetterInputs();
+    renderProjectInputs();
+    showAIThinking();
+    updatePreview();
 }
+
+
 
 // Validate that expected form IDs/containers exist and log missing ones
 function validateFormIds(list) {
@@ -136,15 +204,16 @@ const TEMPLATES = [
   { id:'editorial', name:'Editorial', sub:'Magazine', thumb:'bg-gradient-to-br from-violet-700 to-fuchsia-600',icon:'⊞' },
 ];
 
+// Define which templates should appear for each mode.
+const RESUME_TEMPLATE_IDS = ['modern','classic','minimal','executive','creative','startup','freelance','editorial','technical','ats','corporate'];
+const CV_TEMPLATE_IDS     = ['academic','corporate','executive','ats','classic'];
+
 const COVER_STYLES = [
   { id:'editorial',  name:'Editorial',  sub:'Magazine-style opener' },
   { id:'classic',    name:'Classic',    sub:'Traditional business letter' },
   { id:'modern',     name:'Modern',     sub:'Clean card layout' },
-  { id:'creative',   name:'Creative',   sub:'Bold dark design' },
-  { id:'minimalist', name:'Minimalist', sub:'Stripped to essence' },
   { id:'executive',  name:'Executive',  sub:'Premium dark header' },
-  { id:'warm',       name:'Warm',       sub:'Friendly & approachable' },
-  { id:'technical',  name:'Technical',  sub:'Clean monospace style' },
+  { id:'minimalist', name:'Minimalist', sub:'Stripped to essence' },
 ];
 
 const PORT_STYLES = [
@@ -288,7 +357,11 @@ function collapseAllSidebarPanels() {
 // ── TEMPLATE GRID ──────────────────────────────────────
 function buildTemplateGrid() {
   const grid = document.getElementById('templateGrid');
-  grid.innerHTML = TEMPLATES.map(t => `
+  // Filter templates by current mode so Resume and CV show separate galleries
+  const available = (currentMode === 'cv')
+    ? TEMPLATES.filter(t => CV_TEMPLATE_IDS.includes(t.id))
+    : TEMPLATES.filter(t => RESUME_TEMPLATE_IDS.includes(t.id));
+  grid.innerHTML = available.map(t => `
     <div class="tpl-card ${t.id === currentTemplate ? 'active' : ''}" id="tpl-${t.id}" onclick="setTemplate('${t.id}')">
       <div class="tpl-thumb ${t.thumb}" style="font-size:14px;color:white;letter-spacing:-0.02em;">${t.icon}</div>
       <div class="tpl-name">${t.name}</div>
@@ -318,6 +391,9 @@ function buildPortStyleGrid() {
 }
 
 function setTemplate(id) {
+  // Save selection for the active mode (resume vs cv)
+  if (currentMode === 'cv') cvTemplate = id;
+  else resumeTemplate = id;
   currentTemplate = id;
   document.querySelectorAll('.tpl-card').forEach(c => c.classList.toggle('active', c.id === `tpl-${id}`));
     const selectedCard = document.getElementById(`tpl-${id}`);
@@ -358,60 +434,52 @@ function setMode(mode) {
   document.getElementById('sec-cover-fields').style.display = mode==='cover'    ? '' : 'none';
   const pf = document.getElementById('personalFields');
   if (pf) pf.style.display = (mode==='cover' || mode==='portfolio') ? 'none' : '';
+  // Hide specific personal info fields in resume mode only
+  const hideInResume = (mode === 'resume');
+  ['dob','gender','nationality','maritalStatus','religion'].forEach(fid => {
+    const field = document.getElementById(fid);
+    if (field) {
+      const grp = field.closest('.form-group');
+      if (grp) grp.style.display = hideInResume ? 'none' : '';
+    }
+  });
+  // Hide certain identity fields when in Cover mode
+  const hideInCover = (mode === 'cover');
+  ['website','linkedin','github','summary'].forEach(fid => {
+    const field = document.getElementById(fid);
+    if (field) {
+      const grp = field.closest('.form-group');
+      if (grp) grp.style.display = hideInCover ? 'none' : '';
+      if (hideInCover) { try { field.value = ''; } catch(e){} }
+    }
+  });
+  // Clear personal fields if the personal block is hidden
+  if (pf && pf.style.display === 'none') {
+    pf.querySelectorAll('input,textarea,select').forEach(el => { try { el.value = ''; } catch(e){} });
+  }
+  // Clear personal fields if the personal block is hidden
+  if (pf && pf.style.display === 'none') {
+    pf.querySelectorAll('input,textarea,select').forEach(el => { try { el.value = ''; } catch(e){} });
+  }
   document.getElementById('sec-projects').style.display    = mode==='portfolio' ? '' : 'none';
   document.getElementById('targetJobGroup').style.display  = (mode==='resume')  ? '' : 'none';
 
   if (mode==='portfolio' && projects.length===0) addProject();
+  // Clear CV-only references when leaving CV mode
+  if (mode !== 'cv') { references = []; renderReferenceInputs(); }
+  // Clear cover-letter fields when leaving cover mode
+  if (mode !== 'cover') { coverLetter = { company:'', role:'', intro:'', body:'', closing:'' }; renderCoverLetterInputs(); }
+  // Clear projects when leaving portfolio mode
+  if (mode !== 'portfolio') { projects = []; renderProjectInputs(); }
+
+  // Apply template preference per mode
+  currentTemplate = (mode === 'cv') ? cvTemplate : resumeTemplate;
+  // Rebuild grid to reflect active template
+  buildTemplateGrid();
   updatePreview();
 }
 
-// Demo menu toggle (header)
-function toggleDemoMenu(e) {
-  e.stopPropagation();
-  const m = document.getElementById('demoMenu');
-  if (!m) return;
-  m.style.display = (m.style.display === 'none' || !m.style.display) ? '' : 'none';
-}
-document.addEventListener('click', () => {
-  const m = document.getElementById('demoMenu'); if (m) m.style.display = 'none';
-});
 
-// Wire demo menu buttons (delegated) to ensure profile loading works
-(function wireDemoMenu() {
-  function attach() {
-    const demoMenu = document.getElementById('demoMenu');
-    if (!demoMenu) return;
-    // avoid double-attaching
-    if (demoMenu._demoWired) return; demoMenu._demoWired = true;
-    demoMenu.addEventListener('click', (e) => {
-      try {
-        // ensure we have an Element to call closest on (handle text node clicks)
-        let node = e.target;
-        while (node && node.nodeType !== 1) node = node.parentNode;
-        if (!node) return;
-        const btn = node.closest('[data-demo]');
-        if (!btn) return;
-        const profile = btn.getAttribute('data-demo');
-        console.log('Demo menu clicked:', profile);
-        // prefer calling a specific per-profile loader (e.g. loadAva) if present
-        const pname = String(profile || 'ava').toLowerCase();
-        const fnName = 'load' + (pname.charAt(0).toUpperCase() + pname.slice(1));
-        if (window && typeof window[fnName] === 'function') {
-          window[fnName]();
-        } else if (window && typeof window.loadDemoData === 'function') {
-          window.loadDemoData(profile);
-        } else if (typeof loadDemoData === 'function') {
-          loadDemoData(profile);
-        } else throw new Error('loadDemoData is not defined');
-      } catch (err) {
-        console.error('Error loading demo profile', err);
-        alert('Failed to load demo: ' + (err && err.message ? err.message : String(err)));
-      }
-    });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
-  else attach();
-})();
 
 // ── ZOOM ───────────────────────────────────────────────
 function updateZoom(val) {
@@ -467,6 +535,7 @@ function getFormData() {
     firstName: v('firstName'),
     lastName:  v('lastName'),
     title:     v('title'),
+    date:      v('date'),
     targetJob: v('targetJob'),
     email:     v('email'),
     phone:     v('phone'),
@@ -780,6 +849,28 @@ function showToast(msg) {
   t._hideTimer = setTimeout(() => t.classList.add('hidden'), 2000);
 }
 
+// Backwards-compatible demo wrapper: some HTML calls `loadDemo()`.
+function loadDemo() {
+  if (typeof loadDemoData === 'function') return loadDemoData();
+  console.warn('loadDemoData() is not available in this build.');
+}
+
+// Minimal helper used by demo loader in other repo copies.
+function showAIThinking() {
+  try { showToast(); } catch (e) { /* no-op */ }
+}
+
+// Minimal renderer to populate cover-letter input fields (safe stub).
+function renderCoverLetterInputs() {
+  try {
+    const ids = { company: 'clCompany', role: 'clRole', intro: 'clIntro', body: 'clBody', closing: 'clClosing' };
+    Object.keys(ids).forEach(k => {
+      const el = document.getElementById(ids[k]);
+      if (el) el.value = (coverLetter && coverLetter[k]) || '';
+    });
+  } catch (e) { /* ignore */ }
+}
+
 // ── MAIN RENDER DISPATCHER ─────────────────────────────
 // The updatePreview() function is the central render loop.
 // It collects the current form data, chooses the right renderer based on
@@ -995,7 +1086,7 @@ function renderMinimal(data) {
     <div style="margin-bottom:40px;">
       <div style="font-size:34px;font-weight:300;letter-spacing:-0.04em;color:#111827;">${name}</div>
       ${data.title ? `<div style="font-size:13px;color:#9ca3af;margin-top:6px;font-weight:400;">${data.title}</div>` : ''}
-      <div style="margin-top:12px;font-size:11px;color:#9ca3af;">${contactLine(data)}</div>
+      <div style="margin-top:12px;font-size:11px;color:#9ca3af;">${contactLine(data)}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#9ca3af;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
       ${personalBlock(data,'minimal')}
       ${data.targetJob ? `<div style="margin-top:4px;font-size:10px;color:#c4b5fd;">↳ ${data.targetJob}</div>` : ''}
     </div>
@@ -1230,7 +1321,7 @@ function renderAcademic(data) {
     <div style="text-align:center;margin-bottom:32px;">
       <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:400;color:#1a1a2a;letter-spacing:-0.01em;">${name}</div>
       ${data.title ? `<div style="font-size:14px;color:#6b7280;margin-top:4px;font-style:italic;">${data.title}</div>` : ''}
-      <div style="margin-top:10px;font-size:12px;color:#9ca3af;">${contactLine(data,' · ')}</div>
+      <div style="margin-top:10px;font-size:12px;color:#9ca3af;">${contactLine(data,' · ')}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#9ca3af;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
       ${data.targetJob ? `<div style="margin-top:4px;font-size:11px;color:#9ca3af;font-style:italic;">${data.targetJob}</div>` : ''}
     </div>
     <div style="width:60px;height:2px;background:#92400e;margin:0 auto 32px;"></div>
@@ -1615,7 +1706,10 @@ function renderCoverLetter(data) {
     warm:       renderCoverWarm,
     technical:  renderCoverTechnical,
   };
-  return (styles[currentCoverStyle] || renderCoverEditorial)(data);
+  // Remove contact/profile fields not needed in cover letters
+  const cd = Object.assign({}, data);
+  delete cd.website; delete cd.linkedin; delete cd.github; delete cd.summary;
+  return (styles[currentCoverStyle] || renderCoverEditorial)(cd);
 }
 
 // Cover: Editorial — full-bleed left bar, magazine opener
@@ -1629,7 +1723,7 @@ function renderCoverEditorial(data) {
         <div style="font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:#9ca3af;margin-bottom:12px;">Cover Letter</div>
         <div style="font-family:'Playfair Display',serif;font-size:40px;font-weight:700;color:#0f172a;line-height:1;letter-spacing:-0.03em;">${name}</div>
         ${data.title ? `<div style="font-size:13px;color:#7c3aed;margin-top:8px;">${data.title}</div>` : ''}
-        <div style="margin-top:10px;font-size:11px;color:#9ca3af;font-family:'DM Sans',sans-serif;">${contactLine(data,' · ')}</div>
+        <div style="margin-top:10px;font-size:11px;color:#9ca3af;font-family:'DM Sans',sans-serif;">${contactLine(data,' · ')}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#9ca3af;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:20px;flex:1;font-family:'DM Sans',sans-serif;">
         ${cl.company||cl.role ? `<div style="padding:14px 16px;background:#f5f3ff;border-left:3px solid #7c3aed;">
@@ -1656,7 +1750,7 @@ function renderCoverClassic(data) {
     <div style="margin-bottom:40px;">
       <div style="font-size:20px;font-family:'Playfair Display',serif;font-weight:700;">${name}</div>
       ${data.title ? `<div style="font-size:13px;color:#6b7280;font-style:italic;">${data.title}</div>` : ''}
-      <div style="margin-top:6px;font-size:12px;color:#6b7280;font-family:'DM Sans',sans-serif;">${contactLine(data,' | ')}</div>
+      <div style="margin-top:6px;font-size:12px;color:#6b7280;font-family:'DM Sans',sans-serif;">${contactLine(data,' | ')}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#6b7280;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
     </div>
     <div style="margin-bottom:28px;font-size:12px;color:#6b7280;font-family:'DM Sans',sans-serif;">
       <div>${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
@@ -1748,7 +1842,7 @@ function renderCoverMinimalist(data) {
   return `<div style="padding:80px 96px;min-height:297mm;background:white;font-family:'Outfit',sans-serif;color:#1a1a2a;">
     <div style="margin-bottom:64px;">
       <div style="font-size:13px;color:#9ca3af;">${name}</div>
-      <div style="font-size:11px;color:#d1d5db;margin-top:2px;">${contactLine(data,' · ')}</div>
+      <div style="font-size:11px;color:#d1d5db;margin-top:2px;">${contactLine(data,' · ')}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#d1d5db;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
     </div>
     ${cl.company||cl.role ? `<div style="font-size:11px;color:#9ca3af;margin-bottom:32px;letter-spacing:0.05em;">Re: ${cl.role||''}${cl.role&&cl.company?' · ':''}${cl.company||''}</div>` : '<div style="height:32px;"></div>'}
     <div style="display:flex;flex-direction:column;gap:24px;font-size:14px;color:#374151;line-height:2;max-width:480px;">
@@ -1915,7 +2009,7 @@ function renderPortGallery(data) {
       <div>
         <div style="font-size:32px;font-weight:800;color:#212529;letter-spacing:-0.04em;">${name}</div>
         ${data.title ? `<div style="font-size:13px;color:#6c757d;margin-top:4px;">${data.title}</div>` : ''}
-        <div style="margin-top:6px;font-size:11px;color:#adb5bd;">${contactLine(data,' · ')}</div>
+        <div style="margin-top:6px;font-size:11px;color:#adb5bd;">${contactLine(data,' · ')}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#adb5bd;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
       </div>
       ${data.skills.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:220px;justify-content:flex-end;">
         ${data.skills.slice(0,6).map(s=>`<span style="padding:2px 10px;border-radius:999px;font-size:10px;font-weight:600;
@@ -1972,7 +2066,7 @@ function renderPortCaseStudy(data) {
       <div style="font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:#6366f1;margin-bottom:10px;">Case Studies</div>
       <div style="font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:white;letter-spacing:-0.04em;">${name}</div>
       ${data.title ? `<div style="font-size:12px;color:#818cf8;margin-top:8px;">${data.title}</div>` : ''}
-      <div style="margin-top:10px;font-size:11px;color:#475569;">${contactLine(data,' · ')}</div>
+      <div style="margin-top:10px;font-size:11px;color:#475569;">${contactLine(data,' · ')}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#475569;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
     </div>
     ${data.summary ? `<div style="padding:24px 52px;background:#f0f9ff;border-bottom:1px solid #e0e7ff;">
       <div style="font-size:13px;color:#1e40af;line-height:1.8;max-width:520px;">${data.summary}</div>
@@ -2070,7 +2164,7 @@ function renderPortMinimal(data) {
       <div style="font-size:11px;color:#d1d5db;letter-spacing:0.04em;margin-bottom:10px;">Portfolio</div>
       <div style="font-size:36px;font-weight:300;color:#111827;letter-spacing:-0.04em;">${name}</div>
       ${data.title ? `<div style="font-size:13px;color:#9ca3af;margin-top:4px;">${data.title}</div>` : ''}
-      <div style="margin-top:8px;font-size:11px;color:#d1d5db;">${contactLine(data,' · ')}</div>
+      <div style="margin-top:8px;font-size:11px;color:#d1d5db;">${contactLine(data,' · ')}${data.coverLetter && data.coverLetter.date ? ('<div style="margin-top:6px;font-size:11px;color:#d1d5db;font-family:DM Sans,sans-serif;">' + esc(data.coverLetter.date) + '</div>') : ''}</div>
     </div>
     ${data.summary ? `<div style="margin-bottom:40px;max-width:460px;font-size:14px;color:#6b7280;line-height:2;">${data.summary}</div>` : ''}
     ${data.projects.length ? `<div style="margin-bottom:40px;">
@@ -2410,7 +2504,11 @@ function collapseAllSidebarPanels() {
 // ── TEMPLATE GRID ──────────────────────────────────────
 function buildTemplateGrid() {
   const grid = document.getElementById('templateGrid');
-  grid.innerHTML = TEMPLATES.map(t => `
+  // Filter templates by current mode so Resume and CV show separate galleries
+  const available = (currentMode === 'cv')
+    ? TEMPLATES.filter(t => CV_TEMPLATE_IDS.includes(t.id))
+    : TEMPLATES.filter(t => RESUME_TEMPLATE_IDS.includes(t.id));
+  grid.innerHTML = available.map(t => `
     <div class="tpl-card ${t.id === currentTemplate ? 'active' : ''}" id="tpl-${t.id}" onclick="setTemplate('${t.id}')">
       <div class="tpl-thumb ${t.thumb}" style="font-size:14px;color:white;letter-spacing:-0.02em;">${t.icon}</div>
       <div class="tpl-name">${t.name}</div>
@@ -2440,9 +2538,12 @@ function buildPortStyleGrid() {
 }
 
 function setTemplate(id) {
+  // Save selection for the active mode (resume vs cv)
+  if (currentMode === 'cv') cvTemplate = id;
+  else resumeTemplate = id;
   currentTemplate = id;
   document.querySelectorAll('.tpl-card').forEach(c => c.classList.toggle('active', c.id === `tpl-${id}`));
-    const selectedCard = document.getElementById(`tpl-${id}`);
+  const selectedCard = document.getElementById(`tpl-${id}`);
   if (selectedCard) selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   updatePreview();
 }
@@ -2470,15 +2571,40 @@ function setMode(mode) {
   document.getElementById('sec-template').style.display    = (mode==='resume'||mode==='cv') ? '' : 'none';
   document.getElementById('sec-cover-style').style.display = mode==='cover'     ? '' : 'none';
   document.getElementById('sec-port-style').style.display  = mode==='portfolio' ? '' : 'none';
+  const refsEl = document.getElementById('sec-refs');
+  if (refsEl) refsEl.style.display = mode==='cv' ? '' : 'none';
+  document.getElementById('sec-refs').style.display       = mode==='cv' ? '' : 'none';
   document.getElementById('sec-exp-wrap').style.display    = (mode==='cover') ? 'none' : '';
   document.getElementById('sec-edu-wrap').style.display    = (mode==='cover') ? 'none' : '';
   document.getElementById('sec-skills').style.display      = (mode==='cover') ? 'none' : '';
   document.getElementById('sec-cert').style.display        = (mode==='cover' || mode==='portfolio') ? 'none' : '';
   document.getElementById('sec-cover-fields').style.display = mode==='cover'    ? '' : 'none';
+  const pf = document.getElementById('personalFields');
+  if (pf) pf.style.display = (mode==='cover' || mode==='portfolio') ? 'none' : '';
+  // Hide specific personal info fields in resume mode only
+  const hideInResume = (mode === 'resume');
+  ['dob','gender','nationality','maritalStatus','religion'].forEach(fid => {
+    const field = document.getElementById(fid);
+    if (field) {
+      const grp = field.closest('.form-group');
+      if (grp) grp.style.display = hideInResume ? 'none' : '';
+    }
+  });
   document.getElementById('sec-projects').style.display    = mode==='portfolio' ? '' : 'none';
   document.getElementById('targetJobGroup').style.display  = (mode==='resume')  ? '' : 'none';
 
   if (mode==='portfolio' && projects.length===0) addProject();
+  // Clear CV-only references when leaving CV mode
+  if (mode !== 'cv') { references = []; renderReferenceInputs(); }
+  // Clear cover-letter fields when leaving cover mode
+  if (mode !== 'cover') { coverLetter = { company:'', role:'', intro:'', body:'', closing:'' }; renderCoverLetterInputs(); }
+  // Clear projects when leaving portfolio mode
+  if (mode !== 'portfolio') { projects = []; renderProjectInputs(); }
+
+  // Apply template preference per mode
+  currentTemplate = (mode === 'cv') ? cvTemplate : resumeTemplate;
+  // Rebuild grid to reflect active template
+  buildTemplateGrid();
   updatePreview();
 }
 
@@ -2494,6 +2620,7 @@ function getFormData() {
     firstName: v('firstName'),
     lastName:  v('lastName'),
     title:     v('title'),
+    date:      v('date'),
     targetJob: v('targetJob'),
     email:     v('email'),
     phone:     v('phone'),
@@ -3349,7 +3476,10 @@ function renderCoverLetter(data) {
     warm:       renderCoverWarm,
     technical:  renderCoverTechnical,
   };
-  return (styles[currentCoverStyle] || renderCoverEditorial)(data);
+  // Remove contact/profile fields not needed in cover letters
+  const cd = Object.assign({}, data);
+  delete cd.website; delete cd.linkedin; delete cd.github; delete cd.summary;
+  return (styles[currentCoverStyle] || renderCoverEditorial)(cd);
 }
 
 // Cover: Editorial — full-bleed left bar, magazine opener
@@ -4063,7 +4193,7 @@ async function exportToDocx() {
 
 // ── RESET ──────────────────────────────────────────────
 function resetAll() {
-  ['firstName','lastName','title','targetJob','email','phone','location','website','summary','clCompany','clRole','clIntro','clBody','clClosing'].forEach(id => {
+  ['firstName','lastName','title','date','targetJob','email','phone','location','website','summary','clCompany','clRole','clIntro','clBody','clClosing'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -4078,7 +4208,7 @@ function resetAll() {
 // Keep demo definitions accessible to per-profile loaders
 const DEMOS = {
   ava: {
-    firstName: 'Ava', lastName: 'Bennett', title: 'Senior Product Designer',
+    firstName: 'Ava', lastName: 'Bennett', title: 'Senior Product Designer', date: '1994-07-21',
     dob: '1990-07-14', gender: 'Female', nationality: 'United States', maritalStatus: 'Single', languages: 'English (native), Spanish (fluent)', religion: '',
     linkedin: 'linkedin.com/in/ava-bennett', github: 'github.com/ava-bennett',
     email: 'ava.bennett@studio.io', phone: '+1 555 241 8900', location: 'Austin, TX', website: 'ava.studio',
@@ -4099,42 +4229,13 @@ const DEMOS = {
     ],
     coverLetter: {
       company:'Nova Labs', role:'Lead Product Designer',
+      date: '2025-06-01',
       intro:`I'm genuinely excited to apply for the Lead Product Designer role at Nova Labs. Having shipped products that your team uses daily as a Senior Designer here, I've seen firsthand how design thinking at Nova translates into customer delight — and I want to help shape that at a strategic level.`,
       body:`Over 8 years, I've built and led design systems, run cross-functional research sprints, and shipped experiences that drive measurable retention gains. At Arc, I reduced onboarding drop-off by 34%. At Nova, I cut design-to-dev handoff time by 40% with a unified system. I pair rigorous process with a high craft bar.`,
       closing:`I'd love to discuss how I can help Nova Labs' next chapter. Thank you for your time — I look forward to talking soon.`
     }
   },
-  liam: {
-    firstName: 'Liam', lastName: 'Park', title: 'Senior Software Engineer',
-    dob: '1988-03-02', gender: 'Male', nationality: 'United States', maritalStatus: 'Married', languages: 'English (native), Korean (fluent)', religion: '',
-    linkedin: 'linkedin.com/in/liam-park', github: 'github.com/liampark',
-    email: 'liam.park@devco.com', phone: '+1 415 555 0199', location: 'San Francisco, CA', website: 'liam.dev',
-    targetJob: 'Platform Engineering Lead',
-    summary: 'Backend engineer focusing on scalable distributed systems, observability, and platform tooling with 10+ years experience.',
-    experiences: [
-      { id:11, company:'CloudForge', position:'Senior Software Engineer', startDate:'Mar 2020', endDate:'Present', description:'Built microservices and observability tooling that improved system uptime to 99.99%.' },
-      { id:12, company:'DataMesh Inc', position:'Software Engineer', startDate:'Jul 2015', endDate:'Feb 2020', description:'Designed event-driven architectures and data pipelines powering analytics at scale.' },
-    ],
-    educations: [{ id:13, school:'University of California, Berkeley', degree:'M.S.', field:'Computer Science', year:'2015' }],
-    certifications: [{ id:14, name:'GCP Professional Cloud Architect', issuer:'Google', year:'2021' }],
-    skills: ['Golang','Distributed Systems','Kubernetes','Postgres','Observability','CI/CD'],
-    projects: [{ id:15, name:'StreamPilot', role:'Lead Engineer', description:'High-throughput event processing platform.', link:'streampilot.io', year:'2023' }],
-    coverLetter: { company:'CloudForge', role:'Platform Lead', intro:'', body:'', closing:'' }
-  },
-  chen: {
-    firstName: 'Chen', lastName: 'Li', title: 'Assistant Professor',
-    dob: '1982-11-21', gender: 'Female', nationality: 'China', maritalStatus: 'Married', languages: 'Mandarin (native), English (fluent)', religion: '',
-    linkedin: 'linkedin.com/in/chen-li', github: '',
-    email: 'chen.li@uni.edu', phone: '+1 617 555 3344', location: 'Cambridge, MA', website: 'chenli.academia.edu',
-    targetJob: 'Tenure-track Assistant Professor',
-    summary: 'Researcher specialized in human-computer interaction, published 30+ papers and led multiple funded projects.',
-    experiences: [ { id:21, company:'MIT Media Lab', position:'Postdoc Researcher', startDate:'2016', endDate:'2020', description:'Research on adaptive interfaces and community-driven technologies.' } ],
-    educations: [{ id:22, school:'Tsinghua University', degree:'Ph.D.', field:'Computer Science', year:'2015' }],
-    certifications: [],
-    skills: ['HCI Research','Field Studies','Qualitative Analysis','Python','R'],
-    projects: [],
-    coverLetter: { company:'University', role:'Assistant Professor', intro:'', body:'', closing:'' }
-  }
+  // Only keep the default demo profile to simplify the UI and loader
 };
 
 // Shared apply logic used by per-profile loaders
@@ -4142,10 +4243,10 @@ function applyDemo(demo, profile) {
   console.log('applyDemo called for', profile);
   if (!demo) demo = DEMOS['ava'];
   // quick validation of expected form fields/containers
-  validateFormIds(['firstName','lastName','title','dob','gender','nationality','maritalStatus','languages','religion','linkedin','github','email','phone','location','website','targetJob','summary','clCompany','clRole','clIntro','clBody','clClosing','expList','eduList','certList','projList','refsList']);
+  validateFormIds(['firstName','lastName','title','date','dob','gender','nationality','maritalStatus','languages','religion','linkedin','github','email','phone','location','website','targetJob','summary','clCompany','clRole','clIntro','clBody','clClosing','expList','eduList','certList','projList','refsList']);
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   // basic fields
-  set('firstName', demo.firstName); set('lastName', demo.lastName); set('title', demo.title);
+  set('firstName', demo.firstName); set('lastName', demo.lastName); set('title', demo.title); set('date', demo.date);
   set('dob', demo.dob); set('gender', demo.gender); set('nationality', demo.nationality); set('maritalStatus', demo.maritalStatus); set('languages', demo.languages); set('religion', demo.religion);
   set('linkedin', demo.linkedin); set('github', demo.github);
   set('email', demo.email); set('phone', demo.phone); set('location', demo.location); set('website', demo.website);
@@ -4162,21 +4263,14 @@ function applyDemo(demo, profile) {
   set('clIntro', coverLetter.intro); set('clBody', coverLetter.body); set('clClosing', coverLetter.closing);
 
   // Select a mode/template for each demo to show different layouts
-  if (profile === 'ava') {
-    setMode('resume');
-    setTemplate('modern');
-  } else if (profile === 'liam') {
-    setMode('cv');
-    setTemplate('technical');
-  } else if (profile === 'chen') {
-    setMode('cover');
-    setCoverStyle('classic');
-  }
+  // Default demo behavior: use the ava demo layout
+  setMode('resume');
+  setTemplate('modern');
 
   renderExperienceInputs(); renderEducationInputs(); renderCertificationInputs(); renderSkills(); renderProjectInputs();
   // Dispatch input events to ensure any listeners pick up programmatic value changes
   const dispatchInput = (el) => { if (!el) return; try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) { /* ignore */ } };
-  ['firstName','lastName','title','dob','gender','nationality','maritalStatus','languages','religion','linkedin','github','email','phone','location','website','targetJob','summary','clCompany','clRole','clIntro','clBody','clClosing'].forEach(id => dispatchInput(document.getElementById(id)));
+  ['firstName','lastName','title','date','dob','gender','nationality','maritalStatus','languages','religion','linkedin','github','email','phone','location','website','targetJob','summary','clCompany','clRole','clIntro','clBody','clClosing'].forEach(id => dispatchInput(document.getElementById(id)));
   // also dispatch for dynamically rendered repeatable lists
   ['expList','eduList','certList','projList','refsList'].forEach(containerId => {
     const c = document.getElementById(containerId);
@@ -4194,43 +4288,6 @@ function applyDemo(demo, profile) {
     try { if (typeof demoLogAdd === 'function') demoLogAdd(profile + ' (preview error)', 'error'); } catch (e) {}
   }
   const m = document.getElementById('demoMenu'); if (m) m.style.display = 'none';
-}
-
-// Per-profile loader functions (exported on window for direct calls)
-function loadAva() { applyDemo(DEMOS.ava, 'ava'); }
-function loadLiam() { applyDemo(DEMOS.liam, 'liam'); }
-function loadChen() { applyDemo(DEMOS.chen, 'chen'); }
-
-// Backwards-compatible dispatcher — prefers specific loader function if present
-function loadDemoData(profile = 'ava') {
-  const name = String(profile || 'ava').toLowerCase();
-  const fnName = 'load' + (name.charAt(0).toUpperCase() + name.slice(1));
-  if (typeof window[fnName] === 'function') return window[fnName]();
-  const demo = DEMOS[name] || DEMOS['ava'];
-  return applyDemo(demo, name);
-}
-
-// Expose real loader and per-profile functions
-window.loadAva = loadAva; window.loadLiam = loadLiam; window.loadChen = loadChen;
-window.__realLoadDemo = loadDemoData;
-window.loadDemoData = loadDemoData;
-// Mark loader ready and enable UI
-try { setLoaderReady(true); } catch (e) {}
-// Drain any queued demo requests (FIFO)
-if (window._queuedDemoProfiles && window._queuedDemoProfiles.length) {
-  try {
-    while (window._queuedDemoProfiles.length) {
-      const p = window._queuedDemoProfiles.shift();
-      try {
-        window.__realLoadDemo(p);
-        try { if (typeof demoLogAdd === 'function') demoLogAdd(p, 'processed'); } catch (e) {}
-      } catch (e) {
-        console.error('Queued demo load failed for', p, e);
-        try { if (typeof demoLogAdd === 'function') demoLogAdd(p, 'error'); } catch (ee) {}
-      }
-    }
-  } catch (e) { console.error('Error draining queued demos', e); }
-  window._queuedDemoProfiles = [];
 }
 
 
@@ -4528,7 +4585,7 @@ allInputs.forEach(el => {
 
 // ── RESET ──────────────────────────────────────────────
 function resetAll() {
-  ['firstName','lastName','title','targetJob','email','phone','location','website','summary','clCompany','clRole','clIntro','clBody','clClosing'].forEach(id => {
+  ['firstName','lastName','title','date','targetJob','email','phone','location','website','summary','clCompany','clRole','clIntro','clBody','clClosing'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -4539,8 +4596,6 @@ function resetAll() {
   updatePreview();
 }
 
-/* DEMO DATA is defined earlier as a multi-profile loader (loadDemoData(profile)).
-   Removed duplicate single-profile function to ensure correct demo selection. */
 
 /* =====================================================
    ANIMATION ENGINE — NYXON MOTION SYSTEM
